@@ -23,7 +23,8 @@ app.webrtcCreate = function(events){
 		},
 		pc,
 		stream,
-		isCaller
+		isCaller,
+		remoteDescr
 	;
 
 
@@ -79,12 +80,7 @@ app.webrtcCreate = function(events){
 
 
 
-		pc.onaddstream = function(event) {
-			console.log("Got remote stream!!");
 
-			events.pub(ev.rtcGotRemoteStream, event.stream);
-			//events.pub(ev.rtcConnected);
-		}
 
 		getLocalStream();
 
@@ -92,13 +88,18 @@ app.webrtcCreate = function(events){
 
 	function connect2() {
 
+		pc.onaddstream = function(event) {
+			console.log("Got remote stream!!");
+
+			events.pub(ev.rtcGotRemoteStream, event.stream);
+			//events.pub(ev.rtcConnected);
+		}
+
 		if(isCaller) {
 			pc.createOffer(gotDescription, error);
 		} else {
-			//pc.createAnswer(pc.remoteDescription, gotDescription);
-			//app.log('sdp: ');
-			//app.log(remoteDescr.sdp);
-
+			pc.setRemoteDescription(new RTCSessionDescription(remoteDescr));
+			pc.createAnswer(gotDescription, error);			
 
 		}
 
@@ -141,10 +142,10 @@ app.webrtcCreate = function(events){
 
 			if(cmd == cmsg.descr1) {
 
+				remoteDescr = data;
+
 				connect(false);
 
-				pc.setRemoteDescription(new RTCSessionDescription(data));
-				pc.createAnswer(gotDescription, error);
 
 
 			} else if(cmd == cmsg.descr2) {
@@ -156,7 +157,7 @@ app.webrtcCreate = function(events){
 
 
 			} else if(cmd == cmsg.candidate) {
-				app.log('got Candidate!');
+				app.log('received Candidate!');
 
 				if(!pc) {
 					alert('pc not defined yet');

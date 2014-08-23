@@ -17,7 +17,7 @@ app.serverApiCreate = function(events, ev, ws) {
 	}
 
 	events.sub(ev.wsMessage, function(d){
-		app.log(d);
+		//app.log(d);
 
 		if(Object.keys(d).length < 1) {
 			app.log('empty/wrong server message'); return;
