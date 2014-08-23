@@ -1,7 +1,6 @@
 /.idea
-*.log
+/*.log
 /tmp
-node_modules
-/web/min
+/node_modules
 /web/components
-#web/css/*.css
+/web/build
