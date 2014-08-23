@@ -6,7 +6,7 @@ app.serviceCreate = function(events, ev, serverApi, webrtc) {
 		peerId
 	;
 
-	//SERVER_URL = 'ws://tokwithme-31z4.rhcloud.com:8000/api';
+	SERVER_URL = 'ws://tokwithme-31z4.rhcloud.com:8000/api';
 
 
 	events.sub(ev.connectServerStart, function(){
