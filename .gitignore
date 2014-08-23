@@ -1,0 +1,7 @@
+/.idea
+*.log
+/tmp
+node_modules
+/web/min
+/web/components
+#web/css/*.css
