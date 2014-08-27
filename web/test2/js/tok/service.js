@@ -2,7 +2,7 @@
 app.serviceCreate = function(events, ev, serverApi, webrtc) {
 
 	var
-		SERVER_URL = 'ws://192.168.0.154:8000/api',
+		SERVER_URL = 'ws://192.168.0.153:8000/api',
 		peerId,
 		matching = []
 	;
@@ -17,7 +17,7 @@ app.serviceCreate = function(events, ev, serverApi, webrtc) {
 	events.sub(ev.wsOpen, function(){
 		var data = {
 			self: 1,
-			other: [0, 1]
+			other: [1, 2]
 		};
 		serverApi.cmd('join', data);
 	});
@@ -37,7 +37,7 @@ app.serviceCreate = function(events, ev, serverApi, webrtc) {
 
 	events.sub(ev.rtcSendMsg, function(msg){
 
-		serverApi.cmd('data', {
+		serverApi.cmd('send', {
 			id: peerId,
 			data: JSON.stringify(msg)
 		});
@@ -47,19 +47,20 @@ app.serviceCreate = function(events, ev, serverApi, webrtc) {
 	// Receiving messages from server
 
 	events.sub('api_join', function(d) {
-		events.pub(ev.joinDone, d);
+		if(!d.ok) {console.error('join error'); return;}
+		events.pub(ev.joinDone, d.id);
 
 		// automatically do Matching!
 		events.pub(ev.matchingStart);
 	});
 
 	events.sub('api_matching', function(d) {
-		matching = d;
-		if(!d.length) {
+		matching = d.list;
+		if(!matching.length) {
 			app.log('no matching'); return;
 		}
 		// pick random
-		var i = app.getRandomInt(0, d.length);
+		var i = app.getRandomInt(0, matching.length);
 
 		events.pub(ev.matchingDone, matching[i]);
 	});

@@ -61,6 +61,7 @@ if (navigator.mozGetUserMedia) {
 	RTCPeerConnection = function(pcConfig, pcConstraints) {
 		// .urls is not supported in FF yet.
 		maybeFixConfiguration(pcConfig);
+		console.log(pcConfig);
 		return new mozRTCPeerConnection(pcConfig, pcConstraints);
 	};
 
