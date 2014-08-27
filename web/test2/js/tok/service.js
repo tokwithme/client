@@ -48,6 +48,9 @@ app.serviceCreate = function(events, ev, serverApi, webrtc) {
 
 	events.sub('api_join', function(d) {
 		events.pub(ev.joinDone, d);
+
+		// automatically do Matching!
+		events.pub(ev.matchingStart);
 	});
 
 	events.sub('api_matching', function(d) {
@@ -57,7 +60,7 @@ app.serviceCreate = function(events, ev, serverApi, webrtc) {
 		}
 		// pick random
 		var i = app.getRandomInt(0, d.length);
-		
+
 		events.pub(ev.matchingDone, matching[i]);
 	});
 
@@ -86,6 +89,10 @@ app.serviceCreate = function(events, ev, serverApi, webrtc) {
 		}
 	});
 
+
+
+	// auto connect at start!
+	events.pub(ev.connectServerStart);
 
 
 	return {

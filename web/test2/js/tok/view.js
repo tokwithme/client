@@ -39,9 +39,14 @@ app.viewCreate = function(events, ev) {
 		.on('click', '#btnMatching', function(){
 			events.pub(ev.matchingStart);
 		})
+		.on('loadedmetadata', '#video1', function(){
+			var t = this;
+			app.log('Loaded metadata: '+t.currentSrc+', '+t.videoWidth+'x'+t.videoHeight);
+		})
 	;
 
 	$(selInputYourId).val('');
+	$(selInputPartnerId).val('');
 	$(selBtnConnectServer).removeAttr('disabled');
 
 	return {

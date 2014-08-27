@@ -64,8 +64,8 @@ app.webrtcCreate = function(events){
 		});
 	}
 
-	function connect(isCaller1) {
-		isCaller = isCaller1;
+	function connect(_isCaller) {
+		isCaller = _isCaller;
 
 		pc = new RTCPeerConnection(pcConfig);
 
@@ -87,9 +87,11 @@ app.webrtcCreate = function(events){
 	}
 
 	function connect2() {
+		app.log('connect2');
 
 		pc.onaddstream = function(event) {
 			console.log("Got remote stream!!");
+			//alert('got remote stream');
 
 			events.pub(ev.rtcGotRemoteStream, event.stream);
 			//events.pub(ev.rtcConnected);
@@ -98,7 +100,12 @@ app.webrtcCreate = function(events){
 		if(isCaller) {
 			pc.createOffer(gotDescription, error);
 		} else {
-			pc.setRemoteDescription(new RTCSessionDescription(remoteDescr));
+			if(remoteDescr)	{
+				app.log('remoteDescr exists at connect2()');
+				pc.setRemoteDescription(new RTCSessionDescription(remoteDescr));
+			} else {
+				app.log('no remote desription at connect2()');
+			}
 			pc.createAnswer(gotDescription, error);			
 
 		}
