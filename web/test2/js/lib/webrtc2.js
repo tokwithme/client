@@ -19,7 +19,7 @@ app.webrtcCreate = function(events){
 		},
 		pcConfig = {
 			"iceServers": [
-				{"url": "stun:stun.l.google.com:19302"}/*,
+				{"url": "stun:stun.l.google.com:19302"},
 				{
 					"urls":[
 						"turn:23.251.129.26:3478?transport=udp",
@@ -29,7 +29,7 @@ app.webrtcCreate = function(events){
 					],
 					"credential":"/D+eNYu7YDEKk6cLCeAx0pxZj7o=",
 					"username":"1409228251:72418302"
-				}*/
+				}
 			]
 		},
 		pc,
