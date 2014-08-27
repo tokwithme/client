@@ -16,6 +16,8 @@ app.ev = (function() {
 		rtcError: 0,
 		rtcSendMsg: 0,
 		rtcReceiveMsg: 0
+		//rtcReceiveSDP: 0,
+		//rtcReceiveCandidate: 0
 	};
 
 	for(var k in ev) {

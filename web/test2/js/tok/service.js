@@ -32,7 +32,7 @@ app.serviceCreate = function(events, ev, serverApi, webrtc) {
 
 	events.sub(ev.connectPartnerStart, function(peerId1){
 		peerId = peerId1;
-		webrtc.connect(true);
+		webrtc.start(true);
 	});
 
 	events.sub(ev.rtcSendMsg, function(msg){
