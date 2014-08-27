@@ -18,16 +18,16 @@ app.webrtcCreate = function(events){
 		},
 		pcConfig = {
 			"iceServers": [
-				{"url": "stun:stun.l.google.com:19302"},
+				{"urls": "stun:stun.l.google.com:19302"},
 				{
-					'url': 'turn:192.158.29.39:3478?transport=udp',
-					'credential': 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
-					'username': '28224511:1379330808'
-				},
-				{
-					'url': 'turn:192.158.29.39:3478?transport=tcp',
-					'credential': 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
-					'username': '28224511:1379330808'
+					"urls":[
+						"turn:23.251.129.26:3478?transport=udp",
+						"turn:23.251.129.26:3478?transport=tcp",
+						"turn:23.251.129.26:3479?transport=udp",
+						"turn:23.251.129.26:3479?transport=tcp"
+					],
+					"credential":"/D+eNYu7YDEKk6cLCeAx0pxZj7o=",
+					"username":"1409228251:72418302"
 				}
 			]
 		},
