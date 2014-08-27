@@ -43,6 +43,11 @@ app.serviceCreate = function(events, ev, serverApi, webrtc) {
 		});
 	});
 
+	events.sub(ev.rtcDisconnect, function(){
+
+
+	});
+
 
 	// Receiving messages from server
 
@@ -94,6 +99,12 @@ app.serviceCreate = function(events, ev, serverApi, webrtc) {
 
 	// auto connect at start!
 	events.pub(ev.connectServerStart);
+
+	// todo:
+	/*window.onbeforeunload = function()
+	{
+		sendMessage({type: 'bye'});
+	}*/
 
 
 	return {

@@ -1,4 +1,6 @@
 
+// based on:
+// http://www.w3.org/TR/webrtc/#simple-peer-to-peer-example
 
 app.webrtcCreate = function(events){
 
@@ -9,9 +11,9 @@ app.webrtcCreate = function(events){
 			rtcGotRemoteStream: 'rtcGotRemoteStream',
 			rtcError: 'rtcError',
 			rtcSendMsg: 'rtcSendMsg',
-			rtcReceiveMsg: 'rtcReceiveMsg'
-			//rtcReceiveSDP: 'rtcReceiveSDP',
-			//rtcReceiveCandidate: 'rtcReceiveCandidate'
+			rtcReceiveMsg: 'rtcReceiveMsg',
+			rtcDisconnect: 'rtcDisconnect'
+
 		},
 		cmsg = {
 			sdp: 'sdp',
@@ -40,7 +42,8 @@ app.webrtcCreate = function(events){
 				}
 			]
 		},
-		pc
+		pc,
+		started = false
 	;
 
 
@@ -50,13 +53,24 @@ app.webrtcCreate = function(events){
 
 	// call start() to initiate
 	function start() {
+		if(started) {
+			app.log('already started'); return false;
+		}
+		started = true;
+
 		pc = new RTCPeerConnection(pcConfig);
 
 		pc.oniceconnectionstatechange = function() {
+			if(!pc) return;
 			app.log('--- ICE state: '+pc.iceConnectionState);
+			if(pc.iceConnectionState == 'disconnected') {
+				events.pub(ev.rtcDisconnect);
+				stop();
+			}
 		};
 
 		pc.onsignalingstatechange = function() {
+			if(!pc) return;
 			app.log('Signaling state: '+pc.signalingState);
 		}
 
@@ -96,6 +110,18 @@ app.webrtcCreate = function(events){
 			rtcChannelSend(cmsg.sdp, desc);
 
 		}, logError);
+	}
+
+	function stop() {
+		if(pc) {
+			pc.close();
+			setTimeout(function(){
+				pc = null;
+			}, 100);
+
+		}
+
+		started = false;
 	}
 
 
@@ -138,7 +164,8 @@ app.webrtcCreate = function(events){
 
 
 	return {
-		start: start
+		start: start,
+		stop: stop
 	};
 };
 
