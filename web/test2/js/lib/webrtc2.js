@@ -20,6 +20,13 @@ app.webrtcCreate = function(events){
 		pcConfig = {
 			"iceServers": [
 				{"url": "stun:stun.l.google.com:19302"},
+				// ff .urls workaround
+				/*
+				{'url': "turn:23.251.129.26:3478?transport=udp", "credential":"/D+eNYu7YDEKk6cLCeAx0pxZj7o=", "username":"1409228251:72418302"},
+				{'url': "turn:23.251.129.26:3478?transport=tcp", "credential":"/D+eNYu7YDEKk6cLCeAx0pxZj7o=", "username":"1409228251:72418302"},
+				{'url': "turn:23.251.129.26:3479?transport=udp", "credential":"/D+eNYu7YDEKk6cLCeAx0pxZj7o=", "username":"1409228251:72418302"},
+				{'url': "turn:23.251.129.26:3479?transport=tcp", "credential":"/D+eNYu7YDEKk6cLCeAx0pxZj7o=", "username":"1409228251:72418302"}
+				*/
 				{
 					"urls":[
 						"turn:23.251.129.26:3478?transport=udp",
@@ -45,6 +52,14 @@ app.webrtcCreate = function(events){
 	function start() {
 		pc = new RTCPeerConnection(pcConfig);
 
+		pc.oniceconnectionstatechange = function() {
+			app.log('--- ICE state: '+pc.iceConnectionState);
+		};
+
+		pc.onsignalingstatechange = function() {
+			app.log('Signaling state: '+pc.signalingState);
+		}
+
 		// send any ice candidates to the other peer
 		pc.onicecandidate = function(event) {
 			if(!event.candidate) return;
@@ -52,12 +67,12 @@ app.webrtcCreate = function(events){
 		};
 
 		// let the "negotiationneeded" event trigger offer generation
-		pc.onnegotiationneeded = function () {
+		pc.onnegotiationneeded = function() {
 			pc.createOffer(localDescCreated, logError);
 		}
 
 		// once remote stream arrives, show it in the remote video element
-		pc.onaddstream = function (event) {
+		pc.onaddstream = function(event) {
 			console.log("--- Got remote stream! ---");
 			//alert('got remote stream');
 
@@ -68,11 +83,13 @@ app.webrtcCreate = function(events){
 		navigator.getUserMedia({ "video": true }, function (stream) {
 			pc.addStream(stream);
 			events.pub(ev.rtcGotLocalStream, stream);
+
 		}, logError);
+
 	}
 
 	function localDescCreated(desc) {
-		console.log("localDescCreated");
+		//console.log("localDescCreated");
 
 		pc.setLocalDescription(desc, function () {
 
@@ -90,8 +107,7 @@ app.webrtcCreate = function(events){
 				data = msg.data
 			;
 
-			if (!pc)
-				start();
+			if(!pc) start();
 
 			if(cmd == cmsg.sdp) {
 				pc.setRemoteDescription(new RTCSessionDescription(data), function() {
