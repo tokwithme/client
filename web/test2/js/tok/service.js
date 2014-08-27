@@ -3,7 +3,8 @@ app.serviceCreate = function(events, ev, serverApi, webrtc) {
 
 	var
 		SERVER_URL = 'ws://192.168.0.154:8000/api',
-		peerId
+		peerId,
+		matching = []
 	;
 
 	SERVER_URL = 'ws://tokwithme-31z4.rhcloud.com:8000/api';
@@ -11,7 +12,6 @@ app.serviceCreate = function(events, ev, serverApi, webrtc) {
 
 	events.sub(ev.connectServerStart, function(){
 		serverApi.connect(SERVER_URL);
-
 	});
 
 	events.sub(ev.wsOpen, function(){
@@ -20,6 +20,10 @@ app.serviceCreate = function(events, ev, serverApi, webrtc) {
 			other: [0, 1]
 		};
 		serverApi.cmd('join', data);
+	});
+
+	events.sub(ev.matchingStart, function(){
+		serverApi.cmd('matching');
 	});
 
 	/*events.sub(ev.wsClose, function(){
@@ -39,8 +43,22 @@ app.serviceCreate = function(events, ev, serverApi, webrtc) {
 		});
 	});
 
+
+	// Receiving messages from server
+
 	events.sub('api_join', function(d) {
 		events.pub(ev.joinDone, d);
+	});
+
+	events.sub('api_matching', function(d) {
+		matching = d;
+		if(!d.length) {
+			app.log('no matching'); return;
+		}
+		// pick random
+		var i = app.getRandomInt(0, d.length);
+		
+		events.pub(ev.matchingDone, matching[i]);
 	});
 
 	events.sub('api_data', function(d) {

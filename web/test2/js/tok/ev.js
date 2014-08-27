@@ -4,7 +4,9 @@ app.ev = (function() {
 	var ev = {
 		connectServerStart: 0,
 		joinDone: 0,
+		matchingDone: 0,
 		connectPartnerStart: 0,
+		matchingStart: 0,
 		wsMessage: 0,
 		wsOpen: 0,
 		wsClose: 0,

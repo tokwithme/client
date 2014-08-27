@@ -110,7 +110,10 @@ app.wsCreate = function(events) {
 	}
 
 	function send(data) {
-		if(!connected) return false;
+		if(!connected) {
+			app.log('ws: not connected');
+			return false;
+		}
 		if(typeof data != 'string') data = JSON.stringify(data);
 		app.log('ws sending: '+data);
 		sock.send(data);

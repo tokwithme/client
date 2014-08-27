@@ -11,6 +11,7 @@ app.serverApiCreate = function(events, ev, ws) {
 	}
 
 	function cmd(cmd, data) {
+		if(!data) data = {};
 		var o = {};
 		o[cmd] = data;
 		ws.send(o);

@@ -15,6 +15,10 @@ app.viewCreate = function(events, ev) {
 		$(selBtnConnectServer).attr('disabled', 1);
 	});
 
+	events.sub(ev.matchingDone, function(pid){
+		$(selInputPartnerId).val(pid);
+	});
+
 	events.sub(ev.rtcGotLocalStream, function(stream){
 		$videoLocal.attr('src', URL.createObjectURL(stream));
 	});
@@ -31,6 +35,9 @@ app.viewCreate = function(events, ev) {
 			var pid = $(selInputPartnerId).val();
 			if(!pid) {alert('Enter partner id'); return;}
 			events.pub(ev.connectPartnerStart, pid)
+		})
+		.on('click', '#btnMatching', function(){
+			events.pub(ev.matchingStart);
 		})
 	;
 
