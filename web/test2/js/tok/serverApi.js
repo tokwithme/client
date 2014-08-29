@@ -10,6 +10,10 @@ app.serverApiCreate = function(events, ws) {
 		ws.connect(url, reconnect);
 	}
 
+	function disconnect() {
+		ws.sm.disconnect();
+	}
+
 	function cmd(cmd, data) {
 		if(!data) data = {};
 		var o = {};
@@ -27,6 +31,11 @@ app.serverApiCreate = function(events, ws) {
 		try {
 			var cmdName = Object.keys(d)[0];
 			var data = d[cmdName];
+
+			if(!data.ok) {
+				console.error('server returned error: '+data.reason); return;
+			}
+
 			events.pub('api_'+cmdName, data);
 
 		} catch(ex) {
@@ -38,8 +47,8 @@ app.serverApiCreate = function(events, ws) {
 
 
 	return {
-		connected: ws.connected,
 		connect: connect,
+		//disconnect: disconnect,
 		cmd: cmd
 	};
 };

@@ -12,6 +12,9 @@
   "ignore": [],
   "dependencies": {
 	"jquery": "1.x",
-	"javascript-state-machine": "2.x"
+	"javascript-state-machine": "2.x",
+
+	"angular": "1.2.x",
+	"ngstorage": "x"
   }
 }

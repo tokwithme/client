@@ -36,49 +36,28 @@ app.webrtcCreate = function(events){
 
 		pc,
 		localStream,
-		started,
 
-		fsm = StateMachine.create({
+		sm = app.stateCreate('rtc', {
 			initial: 'idle',
 			events: [
 				{name: 'start', 	from: 'idle', 	to: 'call'},
 				{name: 'stop', 		from: 'call', 	to: 'idle'}
-			],
-			callbacks: {
-				onbeforeevent: function(en,from,to){
-					app.log('--- FSM --- '+from+' > '+to+' ('+en+')');
-					app.debug({RTC: from+' > '+to+' ('+en+')'});
-				},
-				//onafterevent: function(en,fs,ts){app.log('after event: '+a);},
-				//onleavestate: function(en,fs,ts){app.log('leave state: '+a);},
-				onenterstate: function(en,from,to){
-					app.log('--- FSM --- entered state: '+to);
-					app.debug({RTC: to});
-					events.pub('rtcState_'+to);
-				}
-			},
-			error: function(en, from, to, args, errorCode, errorMessage) {
-				return 'event ' + en + ' was naughty :- ' + errorMessage;
-			}
+			]
 		})
 	;
 
 
-	reset();
-
-
-	function reset() {
-		started = false;
+	sm.onidle = function() {
 		if(pc) {
 			try {
 				pc.close();
 			} catch(ign) {}
 
-			setTimeout(function(){
+			//setTimeout(function(){
 				pc = null;
-			}, 100);
+			//}, 0);
 		}
-	}
+	};
 
 
 	function logError(e) {
@@ -86,9 +65,7 @@ app.webrtcCreate = function(events){
 	}
 
 	// call start() to initiate
-	fsm.onstart = function() {
-		if(started) {app.log('already started'); return false;}
-		started = true;
+	sm.onstart = function() {
 
 		pc = new RTCPeerConnection(pcConfig);
 
@@ -99,7 +76,7 @@ app.webrtcCreate = function(events){
 			app.debug({ICE: state});
 			if(state == 'disconnected') {
 				//events.pub(en.rtcDisconnect);
-				fsm.stop();
+				sm.stop();
 				//reset();
 			}
 			events.pub('rtcIceStateChanged', state);
@@ -141,7 +118,7 @@ app.webrtcCreate = function(events){
 		}, function(e) {
 			var msg = (e && e.name) ? e.name : 'getUserMedia error';
 			alert(msg);
-			fsm.stop();
+			sm.stop();
 		});
 
 
@@ -163,9 +140,7 @@ app.webrtcCreate = function(events){
 		}, logError);
 	}
 
-	fsm.onstop = function() {
-		reset();
-	};
+
 
 
 
@@ -186,11 +161,11 @@ app.webrtcCreate = function(events){
 				data = msg.data
 			;
 
-			if(!started) {
+			if(!sm.is('call')) {
 				// receive incoming call
 				// send event, start incoming connection on external event
 				//start();
-				fsm.start();
+				sm.start();
 			}
 
 			if(cmd == cmsg.sdp) {
@@ -216,9 +191,11 @@ app.webrtcCreate = function(events){
 
 
 	return {
-		fsm: fsm,
-		start: function() {fsm.start();},
-		stop: function() {fsm.stop();}
+		sm: sm
+		/*
+		start: function() {sm.start();},
+		stop: function() {sm.stop();}
+		*/
 	};
 };
 

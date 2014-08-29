@@ -11,26 +11,37 @@
 	<link rel="stylesheet" href="style.css">
 	<link rel="stylesheet" href="debug.css">
 
-
+	<style>[ng-cloak] {display: none !important;}</style>
 </head>
-<body>
+<body ng-controller="mainCtrl">
 
-<input type="text" id="clientId" placeholder="Your id">
-<button id="btnConnect1">Connect Server</button>
+
+<button id="btnConnect1" ng-disabled="clientSm.cannot('connect')" ng-click="clientSm.connect()">Connect Server</button>
+<button id="btnDisconnect" ng-disabled="clientSm.is('disconnected')" ng-click="clientSm.disconnect()">Disconnect</button>
 <br><br>
 
-<input type="text" id="partnerId" placeholder="Partner id">
-<button id="btnConnect2">Connect Partner</button>
-<button id="btnMatching">Find Matching</button>
+<button id="btnJoin" ng-disabled="clientSm.cannot('joinStart')" ng-click="clientSm.joinStart()">Join</button>
+<button id="btnLeave" ng-disabled="clientSm.cannot('leave')" ng-click="clientSm.leave()">Leave</button>
 <br><br>
 
-<video id="video1" autoplay></video>
+<button id="btnCall" ng-disabled="clientSm.cannot('findMatch')" ng-click="clientSm.findMatch()">Call Random</button>
+<button id="btnHang" ng-disabled="clientSm.cannot('endCall')" ng-click="clientSm.endCall()">Hang Up</button>
+<br><br>
 
-<video id="video2" autoplay></video>
+<div ng-hide1="123">
+	<video id="video1" autoplay></video>
+	<video id="video2" autoplay></video>
+</div>
 
 
 <div id="debug"></div>
 
+
+
+
+
+
+<!-- scripts -->
 
 <script src="/build/bower.js"></script>
 
@@ -40,6 +51,7 @@
 <script src="js/lib/events.js"></script>
 <script src="js/lib/webrtc2.js"></script>
 <script src="js/lib/ws.js"></script>
+<script src="js/lib/state.js"></script>
 
 <script src="js/tok/debug.js"></script>
 <script src="js/tok/service.js"></script>
@@ -47,27 +59,14 @@
 <script src="js/tok/serverApi.js"></script>
 <script src="js/tok/clientApi.js"></script>
 
+<script src="js/tok/ng.js"></script>
+
 <script src="js/main.js"></script>
 
 
-
-
 <!--
-
-<script src="js/adapter.js"></script>
-
 <script src="//127.0.0.1:35729/livereload.js"></script>
-
-<script src="/js/init/common.js"></script>
-<script src="/js/lib/storage.js"></script>
-<script src="/js/lib/als.js"></script>
-<script src="/js/lib/tmpl.js"></script>
-<script src="/js/lib/retina.js"></script>
-<script src="/js/app.js"></script>
-<script src="/js/quiz/quiz.js"></script>
-<script src="/js/quiz/timer.js"></script>
 -->
-
 
 
 </body>

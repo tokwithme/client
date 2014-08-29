@@ -10,7 +10,8 @@ app.debug = (function() {
 	function upd(kv) {
 		for(var k in kv) {
 			var v = kv[k];
-			o[k] = v;
+			if(v) o[k] = v;
+			else delete o[k];
 		}
 
 		render();

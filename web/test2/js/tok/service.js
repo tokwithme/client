@@ -1,36 +1,83 @@
 
-app.serviceCreate = function(events, serverApi, webrtc) {
+app.serviceCreate = function(events, ws, serverApi, webrtc) {
 
 	var
-		SERVER_URL = 'ws://192.168.0.153:8000/api',
+		wsCfg = {
+			url: 'ws://192.168.0.153:8000/api'
+		},
+		clientId,
 		peerId,
-		matching = []
+		matching = [],
+		sm = app.stateCreate('client', {
+			initial: 'disconnected',
+			events: [
+				{name: 'connect', 		from: 'disconnected', 	to: 'out'},
+				{name: 'disconnect', 	from: '*', 				to: 'disconnected'},
+				{name: 'joinStart', 	from: 'out', 			to: 'joining'},
+				{name: 'joinOk', 		from: 'joining', 		to: 'ready'},
+				{name: 'leave', 		from: 'ready', 			to: 'out'},
+				{name: 'findMatch', 	from: 'ready', 			to: 'matching'},
+				{name: 'findMatchFail', from: 'matching', 		to: 'ready'},
+				{name: 'startCall', 	from: 'matching', 		to: 'call'},
+				{name: 'endCall', 		from: 'call', 			to: 'ready'}
+			]
+		})
 	;
 
-	SERVER_URL = 'ws://tokwithme-31z4.rhcloud.com:8000/api';
+	wsCfg.url = 'ws://tokwithme-31z4.rhcloud.com:8000/api';
+
+	ws.setCfg(wsCfg);
+
+	//events.domBind();
+
+
+	// auto connect at start!
+	//events.pub('connectServerStart');
+
+	sm.ondisconnect = function(){
+		ws.sm.disconnect();
+		clientId = null;
+		peerId = null;
+		matching = [];
+		app.debug({
+			clientId: null,
+			peerId: null,
+			matching: null
+		});
+	};
+
+	sm.onconnect = function(){
+		ws.sm.connect();
+	};
+
+	sm.onjoining = function(){
+
+		var data = {
+			self: 1,
+			other: [1, 2]
+		};
+		serverApi.cmd('join', data);
+	};
+
+	sm.onleave = function(){
+		serverApi.cmd('leave');
+		clientId = null;
+		app.debug({clientId: clientId});
+	};
+
+	sm.onfindMatch = function(){
+		serverApi.cmd('matching');
+	};
+
+	sm.onstartCall = function(){
+		webrtc.sm.start();
+	};
 
 
 	events.subAll({
 
-		'connectServerStart': function(){
-			serverApi.connect(SERVER_URL);
-		},
-
-		'wsOpen': function(){
-			var data = {
-				self: 1,
-				other: [1, 2]
-			};
-			serverApi.cmd('join', data);
-		},
-
-		'matchingStart': function(){
-			serverApi.cmd('matching');
-		},
-
-		'connectPartnerStart': function(peerId1){
-			peerId = peerId1;
-			webrtc.start();
+		'state_ws_disconnected': function(){
+			sm.disconnect();
 		},
 
 		'rtcSendMsg': function(msg){
@@ -41,27 +88,40 @@ app.serviceCreate = function(events, serverApi, webrtc) {
 			});
 		},
 
-		'rtcDisconnect': function() {
+		'state_rtc_idle': function() {
 
 		},
 
 		'api_join': function(d) {
-			if(!d.ok) {console.error('join error'); return;}
-			events.pub('joinDone', d.id);
+			if(sm.checkWrongState('joining', 'disconnect', 'api_join')) return;
+
+			clientId = d.id;
+			app.debug({clientId: clientId});
+
+			sm.joinOk();
 
 			// automatically do Matching!
-			events.pub('matchingStart');
+			//events.pub('matchingStart');
 		},
 
 		'api_matching': function(d) {
+			//if(sm.checkWrongState('matching', 'disconnect', 'api_matching')) return;
 			matching = d.list;
-			if(!matching.length) {
-				app.log('no matching'); return;
+			app.debug({matching: matching.length});
+
+			if(!sm.is('matching')) return; // probably in a call?..
+
+			if(!matching || !matching.length) {
+				app.log('no matching');
+				sm.findMatchFail();
+				return;
 			}
 			// pick random
 			var i = app.getRandomInt(0, matching.length);
+			peerId = matching[i];
+			app.debug({peerId: peerId});
 
-			events.pub('matchingDone', matching[i]);
+			sm.startCall();
 		},
 
 		'api_data': function(d) {
@@ -92,8 +152,8 @@ app.serviceCreate = function(events, serverApi, webrtc) {
 
 
 
-	// auto connect at start!
-	events.pub('connectServerStart');
+
+
 
 	// todo:
 	/*window.onbeforeunload = function()

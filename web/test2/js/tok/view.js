@@ -3,6 +3,7 @@ app.viewCreate = function(events) {
 
 	var
 		selBtnConnectServer = '#btnConnect1',
+		selBtnDisconnectServer = '#btnDisconnect',
 		selBtnConnectPartner = '#btnConnect2',
 		selInputYourId = '#clientId',
 		selInputPartnerId = '#partnerId',
@@ -11,6 +12,11 @@ app.viewCreate = function(events) {
 	;
 
 	events.subAll({
+
+		'state_ws_connected': function() {
+			$(selBtnConnectServer).attr('disabled', 1);
+			$(selBtnConnectServer).attr('disabled', 1);
+		},
 
 		'joinDone': function(cid){
 			$(selInputYourId).val(cid);
@@ -29,7 +35,7 @@ app.viewCreate = function(events) {
 			$videoRemote.attr('src', URL.createObjectURL(stream));
 		},
 
-		'rtcState_idle': function() {
+		'state_rtc_idle': function() {
 			$videoLocal.removeAttr('src');
 			$videoRemote.removeAttr('src');
 		}
@@ -39,9 +45,9 @@ app.viewCreate = function(events) {
 
 
 	$(document)
-		.on('click', selBtnConnectServer, function(){
+		/*.on('click', selBtnConnectServer, function(){
 			events.pub('connectServerStart');
-		})
+		})*/
 		.on('click', selBtnConnectPartner, function(){
 			var pid = $(selInputPartnerId).val();
 			if(!pid) {alert('Enter partner id'); return;}

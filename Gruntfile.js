@@ -13,7 +13,9 @@ module.exports = function(grunt) {
 		bower_concat: {
 			all: {
 				mainFiles: {
-					'jquery': 'dist/jquery.min.js'
+					'jquery': 'dist/jquery.min.js',
+					//'angular': 'angular.min.js',
+					'ngstorage': 'ngStorage.min.js'
 				},
 				dest: 'web/build/bower.js'
 			}

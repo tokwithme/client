@@ -5,7 +5,6 @@
 app.events = (function(){
 	var
 		topics = {},
-		en = {},
 		debug = false
 	;
 
@@ -44,12 +43,30 @@ app.events = (function(){
 		}
 	};
 
+	function domBind() {
+		var
+			attr = 'data-event',
+			attrOn = 'data-event-on'
+		;
+		$('['+attr+']').each(function(){
+			var
+				t = $(this),
+				topic = t.attr(attr),
+				eventOn = t.attr(attrOn)
+			;
+
+			if(!eventOn) eventOn = 'click';
+
+			t.on(eventOn, function(){
+				pub(topic);
+			});
+
+
+
+		});
+	}
+
 	return {
-		/*add: function(a) {
-			for(var i=0; i<a.length; i++) {
-				en[a] = a;
-			}
-		},*/
 		subAll: function(kv) {
 			for(var k in kv) {
 				sub(k, kv[k]);
@@ -57,7 +74,6 @@ app.events = (function(){
 		},
 		sub: sub,
 		pub: pub,
-		en: en
-
+		domBind: domBind
 	};
 })();

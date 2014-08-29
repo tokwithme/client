@@ -4,8 +4,12 @@ app.wsCreate = function(events) {
 	var
 		enabled = ("WebSocket" in window),
 
+		cfg = {
+			url: null,
+			reconnectEnabled: false
+		},
 		// reconnect settings
-		reconnectEnabled = false,
+
 		rc = {
 			cur: 1,
 			min: 2,
@@ -14,75 +18,67 @@ app.wsCreate = function(events) {
 		},
 
 		sock,
-		url,
-		connected = false,
-		ts
+		ts,
+
+		sm = app.stateCreate('ws', {
+			initial: 'disconnected',
+			events: [
+				{name: 'connect', 		from: 'disconnected', 	to: 'connecting'},
+				{name: 'connectOk', 	from: 'connecting', 	to: 'connected'},
+				{name: 'disconnect', 	from: '*', 				to: 'disconnected'}
+			]
+		})
 	;
 
 
+	sm.ondisconnected = function() {
 
-	function connect(url1, reconnectEnabled1) {
-		if(!enabled) {
-			alert('WebSocket not supported'); return false;
+		ts = new Date().getTime();
+
+		if(sock) {
+			try {
+				sock.onclose = null;
+				sock.close();
+			} catch(ign){}
+			sock = null;
 		}
+	};
 
-		if(connected) return false;
 
-		url = url1;
-		reconnectEnabled = reconnectEnabled1;
-		connected = false;
+	sm.onconnecting = function() {
+		if(!enabled) {console.log('WebSocket not supported'); return false;}
 
-		reconnect();
-	}
+		app.log('ws connecting to '+cfg.url);
 
-	function reconnect() {
-		if(connected) return false;
-
-		if(typeof Visibility != 'undefined' && Visibility.hidden()) {
-			app.log('ws visibility hidden: skipping reconnect');
-			setTimeout(reconnect, parseInt(rc.cur*1000));
-			return false;
-		}
-
-		app.log('ws connecting to '+url);
-
-		sock = new WebSocket(url);
+		sock = new WebSocket(cfg.url);
 		sock.onopen = onOpen;
 		sock.onclose = onClose;
 		sock.onmessage = onMessage;
-	}
+	};
 
-	function disconnect() {
-		if(!connected) return false;
-		connected = false;
-		app.log('ws disconnecting');
-		sock.close();
-		sock = null;
-	}
-
-	function onOpen() {
-		app.log('ws open');
-		connected = true;
+	sm.onconnected = function() {
 		ts = new Date().getTime();
-
-		events.pub('wsOpen');
 
 		// reset reconnect
 		rc.cur = rc.min;
+	};
+
+
+	function onOpen() {
+		sm.connectOk();
 	}
 
 	function onClose() {
 		app.log('ws close');
-		connected = false;
-		ts = new Date().getTime();
 
-		events.pub('wsClose');
+		sm.disconnect();
 
-		if(!reconnectEnabled) return;
 		// schedule reconnect
+		if(!cfg.reconnectEnabled) return;
+
 		app.log('ws reconnect in '+parseInt(rc.cur)+' sec');
 		setTimeout(function(){
-			reconnect();
+			sm.connect();
 		}, parseInt(rc.cur*1000));
 
 		// increase reconnect timeout
@@ -107,10 +103,8 @@ app.wsCreate = function(events) {
 	}
 
 	function send(data) {
-		if(!connected) {
-			app.log('ws: not connected');
-			return false;
-		}
+		if(!sm.is('connected')) {app.log('ws: not connected');return false;}
+
 		if(typeof data != 'string') data = JSON.stringify(data);
 		app.log(' -> '+data);
 		sock.send(data);
@@ -120,9 +114,18 @@ app.wsCreate = function(events) {
 
 
 	return {
-		connected: connected,
-		connect: connect,
-		disconnect: disconnect,
+		setCfg: function(_cfg) {
+			cfg = _cfg;
+		},
+		sm: sm,
+		/*
+		connect: function() {
+			sm.connect.apply(sm, arguments);
+		},
+		disconnect: function(){
+			sm.disconnect();
+		},
+		*/
 		send: send
 	};
 };
