@@ -5,20 +5,11 @@
 app.webrtcCreate = function(events){
 
 	var
-		ev = {
-			rtcConnected: 'rtcConnected',
-			rtcGotLocalStream: 'rtcGotLocalStream',
-			rtcGotRemoteStream: 'rtcGotRemoteStream',
-			rtcError: 'rtcError',
-			rtcSendMsg: 'rtcSendMsg',
-			rtcReceiveMsg: 'rtcReceiveMsg',
-			rtcDisconnect: 'rtcDisconnect'
-
-		},
 		cmsg = {
 			sdp: 'sdp',
 			candidate: 'candidate'
 		},
+
 		pcConfig = {
 			"iceServers": [
 				{"url": "stun:stun.l.google.com:19302"},
@@ -42,9 +33,52 @@ app.webrtcCreate = function(events){
 				}
 			]
 		},
+
 		pc,
-		started = false
+		localStream,
+		started,
+
+		fsm = StateMachine.create({
+			initial: 'idle',
+			events: [
+				{name: 'start', 	from: 'idle', 	to: 'call'},
+				{name: 'stop', 		from: 'call', 	to: 'idle'}
+			],
+			callbacks: {
+				onbeforeevent: function(en,from,to){
+					app.log('--- FSM --- '+from+' > '+to+' ('+en+')');
+					app.debug({RTC: from+' > '+to+' ('+en+')'});
+				},
+				//onafterevent: function(en,fs,ts){app.log('after event: '+a);},
+				//onleavestate: function(en,fs,ts){app.log('leave state: '+a);},
+				onenterstate: function(en,from,to){
+					app.log('--- FSM --- entered state: '+to);
+					app.debug({RTC: to});
+					events.pub('rtcState_'+to);
+				}
+			},
+			error: function(en, from, to, args, errorCode, errorMessage) {
+				return 'event ' + en + ' was naughty :- ' + errorMessage;
+			}
+		})
 	;
+
+
+	reset();
+
+
+	function reset() {
+		started = false;
+		if(pc) {
+			try {
+				pc.close();
+			} catch(ign) {}
+
+			setTimeout(function(){
+				pc = null;
+			}, 100);
+		}
+	}
 
 
 	function logError(e) {
@@ -52,27 +86,30 @@ app.webrtcCreate = function(events){
 	}
 
 	// call start() to initiate
-	function start() {
-		if(started) {
-			app.log('already started'); return false;
-		}
+	fsm.onstart = function() {
+		if(started) {app.log('already started'); return false;}
 		started = true;
 
 		pc = new RTCPeerConnection(pcConfig);
 
 		pc.oniceconnectionstatechange = function() {
 			if(!pc) return;
-			app.log('--- ICE state: '+pc.iceConnectionState);
-			if(pc.iceConnectionState == 'disconnected') {
-				events.pub(ev.rtcDisconnect);
-				stop();
+			var state = pc.iceConnectionState;
+			app.log('--- ICE state: '+state);
+			app.debug({ICE: state});
+			if(state == 'disconnected') {
+				//events.pub(en.rtcDisconnect);
+				fsm.stop();
+				//reset();
 			}
+			events.pub('rtcIceStateChanged', state);
+
 		};
 
-		pc.onsignalingstatechange = function() {
+		/*pc.onsignalingstatechange = function() {
 			if(!pc) return;
 			app.log('Signaling state: '+pc.signalingState);
-		}
+		}*/
 
 		// send any ice candidates to the other peer
 		pc.onicecandidate = function(event) {
@@ -90,17 +127,31 @@ app.webrtcCreate = function(events){
 			console.log("--- Got remote stream! ---");
 			//alert('got remote stream');
 
-			events.pub(ev.rtcGotRemoteStream, event.stream);
+			events.pub('rtcGotRemoteStream', event.stream);
 		};
 
 		// get a local stream, show it in a self-view and add it to be sent
-		navigator.getUserMedia({ "video": true }, function (stream) {
+
+
+		getUserMedia({ "video": true }, function(stream) {
+			if(!localStream) localStream = stream;
 			pc.addStream(stream);
-			events.pub(ev.rtcGotLocalStream, stream);
+			events.pub('rtcGotLocalStream', stream);
 
-		}, logError);
+		}, function(e) {
+			var msg = (e && e.name) ? e.name : 'getUserMedia error';
+			alert(msg);
+			fsm.stop();
+		});
 
+
+	};
+
+	function getUserMedia(constraints, cb, cbErr) {
+		if(localStream) {cb(localStream); return;}
+		navigator.getUserMedia(constraints, cb, cbErr);
 	}
+
 
 	function localDescCreated(desc) {
 		//console.log("localDescCreated");
@@ -112,20 +163,22 @@ app.webrtcCreate = function(events){
 		}, logError);
 	}
 
-	function stop() {
-		if(pc) {
-			pc.close();
-			setTimeout(function(){
-				pc = null;
-			}, 100);
+	fsm.onstop = function() {
+		reset();
+	};
 
-		}
 
-		started = false;
+
+	function rtcChannelSend(cmd, data) {
+		var msg = {
+			cmd: cmd,
+			data: data
+		};
+		events.pub('rtcSendMsg', msg);
 	}
 
 
-	events.sub(ev.rtcReceiveMsg, function(msg) {
+	events.sub('rtcReceiveMsg', function(msg) {
 
 		try {
 			var
@@ -133,7 +186,12 @@ app.webrtcCreate = function(events){
 				data = msg.data
 			;
 
-			if(!pc) start();
+			if(!started) {
+				// receive incoming call
+				// send event, start incoming connection on external event
+				//start();
+				fsm.start();
+			}
 
 			if(cmd == cmsg.sdp) {
 				pc.setRemoteDescription(new RTCSessionDescription(data), function() {
@@ -154,18 +212,13 @@ app.webrtcCreate = function(events){
 		}
 	});
 
-	function rtcChannelSend(cmd, data) {
-		var msg = {
-			cmd: cmd,
-			data: data
-		};
-		events.pub(ev.rtcSendMsg, msg);
-	}
+
 
 
 	return {
-		start: start,
-		stop: stop
+		fsm: fsm,
+		start: function() {fsm.start();},
+		stop: function() {fsm.stop();}
 	};
 };
 

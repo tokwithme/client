@@ -3,11 +3,6 @@ app.wsCreate = function(events) {
 
 	var
 		enabled = ("WebSocket" in window),
-		ev = {
-			wsMessage: 'wsMessage',
-			wsOpen: 'wsOpen',
-			wsClose: 'wsClose'
-		},
 
 		// reconnect settings
 		reconnectEnabled = false,
@@ -23,6 +18,8 @@ app.wsCreate = function(events) {
 		connected = false,
 		ts
 	;
+
+
 
 	function connect(url1, reconnectEnabled1) {
 		if(!enabled) {
@@ -68,7 +65,7 @@ app.wsCreate = function(events) {
 		connected = true;
 		ts = new Date().getTime();
 
-		events.pub(ev.wsOpen);
+		events.pub('wsOpen');
 
 		// reset reconnect
 		rc.cur = rc.min;
@@ -79,7 +76,7 @@ app.wsCreate = function(events) {
 		connected = false;
 		ts = new Date().getTime();
 
-		events.pub(ev.wsClose);
+		events.pub('wsClose');
 
 		if(!reconnectEnabled) return;
 		// schedule reconnect
@@ -94,7 +91,7 @@ app.wsCreate = function(events) {
 	}
 
 	function onMessage(e) {
-		app.log('ws msg: '+e.data);
+		app.log(' <- '+e.data);
 
 		var msg;
 
@@ -105,7 +102,7 @@ app.wsCreate = function(events) {
 			return;
 		}
 
-		events.pub(ev.wsMessage, msg);
+		events.pub('wsMessage', msg);
 
 	}
 
@@ -115,7 +112,7 @@ app.wsCreate = function(events) {
 			return false;
 		}
 		if(typeof data != 'string') data = JSON.stringify(data);
-		app.log('ws sending: '+data);
+		app.log(' -> '+data);
 		sock.send(data);
 	}
 

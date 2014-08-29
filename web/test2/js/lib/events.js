@@ -1,35 +1,63 @@
 
+// Events message bus
 // based on:
 // http://davidwalsh.name/pubsub-javascript
-app.eventsCreate = function(){
-	var topics = {};
+app.events = (function(){
+	var
+		topics = {},
+		en = {},
+		debug = false
+	;
 
-	return {
-		sub: function(topic, listener) {
-			// Create the topic's object if not yet created
-			if(!topics[topic]) topics[topic] = { queue: [] };
+	//debug = true;
 
-			// Add the listener to queue
-			var index = topics[topic].queue.push(listener) -1;
 
-			// Provide handle back for removal of topic
-			return (function(topic, index) {
-				return {
-					remove: function() {
-						delete topics[topic].queue[index];
-					}
-				};
-			})(topic, index);
-		},
-		pub: function(topic, info) {
-			// If the topic doesn't exist, or there's no listeners in queue, just leave
-			if(!topic || !topics[topic] || !topics[topic].queue.length) return;
+	function sub(topic, listener) {
+		// Create the topic's object if not yet created
+		if(!topic) {console.error('events.sub empty topic!'); return;}
+		if(!topics[topic]) topics[topic] = { queue: [] };
 
-			// Cycle through topics queue, fire!
-			var items = topics[topic].queue;
-			for(var i=0; i<items.length; i++) {
-				items[i](info);
-			}
+		// Add the listener to queue
+		var index = topics[topic].queue.push(listener) -1;
+
+		// Provide handle back for removal of topic
+		return (function(topic, index) {
+			return {
+				remove: function() {
+					delete topics[topic].queue[index];
+				}
+			};
+		})(topic, index);
+	};
+
+	function pub(topic, info) {
+		if(debug) {console.log('--- EVENT: '+topic);}
+
+		// If the topic doesn't exist, or there's no listeners in queue, just leave
+		if(!topic) {console.error('events.pub empty topic!'); return;}
+		if(!topics[topic] || !topics[topic].queue.length) return;
+
+		// Cycle through topics queue, fire!
+		var items = topics[topic].queue;
+		for(var i=0; i<items.length; i++) {
+			items[i](info);
 		}
 	};
-};
+
+	return {
+		/*add: function(a) {
+			for(var i=0; i<a.length; i++) {
+				en[a] = a;
+			}
+		},*/
+		subAll: function(kv) {
+			for(var k in kv) {
+				sub(k, kv[k]);
+			}
+		},
+		sub: sub,
+		pub: pub,
+		en: en
+
+	};
+})();

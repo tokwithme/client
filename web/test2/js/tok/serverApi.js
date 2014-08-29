@@ -1,6 +1,6 @@
 
 
-app.serverApiCreate = function(events, ev, ws) {
+app.serverApiCreate = function(events, ws) {
 
 	var
 		reconnect = false
@@ -17,7 +17,7 @@ app.serverApiCreate = function(events, ev, ws) {
 		ws.send(o);
 	}
 
-	events.sub(ev.wsMessage, function(d){
+	events.sub('wsMessage', function(d){
 		//app.log(d);
 
 		if(Object.keys(d).length < 1) {
