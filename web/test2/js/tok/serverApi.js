@@ -32,7 +32,7 @@ app.serverApiCreate = function(events, ws) {
 			var cmdName = Object.keys(d)[0];
 			var data = d[cmdName];
 
-			if(!data.ok) {
+			if(!data.ok && !data.data) {
 				console.error('server returned error: '+data.reason); return;
 			}
 

@@ -16,7 +16,7 @@
 <body ng-controller="mainCtrl">
 
 
-<button id="btnConnect1" ng-disabled="clientSm.cannot('connect')" ng-click="clientSm.connect()">Connect Server</button>
+<button id="btnConnect1" ng-disabled="clientSm.cannot('connectStart')" ng-click="clientSm.connectStart()">Connect Server</button>
 <button id="btnDisconnect" ng-disabled="clientSm.is('disconnected')" ng-click="clientSm.disconnect()">Disconnect</button>
 <br><br>
 
@@ -28,9 +28,9 @@
 <button id="btnHang" ng-disabled="clientSm.cannot('endCall')" ng-click="clientSm.endCall()">Hang Up</button>
 <br><br>
 
-<div ng-hide1="123">
-	<video id="video1" autoplay></video>
-	<video id="video2" autoplay></video>
+<div ng-cloak1 ng-show1="clientSm.is('call')">
+	<video id="video1" ng-src="{{localVideoSrc}}" autoplay></video>
+	<video id="video2" ng-src="{{remoteVideoSrc}}" autoplay></video>
 </div>
 
 

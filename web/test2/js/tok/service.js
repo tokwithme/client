@@ -11,7 +11,8 @@ app.serviceCreate = function(events, ws, serverApi, webrtc) {
 		sm = app.stateCreate('client', {
 			initial: 'disconnected',
 			events: [
-				{name: 'connect', 		from: 'disconnected', 	to: 'out'},
+				{name: 'connectStart', 	from: 'disconnected', 	to: 'connecting'},
+				{name: 'connectOk', 	from: 'connecting', 	to: 'out'},
 				{name: 'disconnect', 	from: '*', 				to: 'disconnected'},
 				{name: 'joinStart', 	from: 'out', 			to: 'joining'},
 				{name: 'joinOk', 		from: 'joining', 		to: 'ready'},
@@ -19,6 +20,7 @@ app.serviceCreate = function(events, ws, serverApi, webrtc) {
 				{name: 'findMatch', 	from: 'ready', 			to: 'matching'},
 				{name: 'findMatchFail', from: 'matching', 		to: 'ready'},
 				{name: 'startCall', 	from: 'matching', 		to: 'call'},
+				{name: 'incomingCall', 	from: 'ready', 			to: 'call'},
 				{name: 'endCall', 		from: 'call', 			to: 'ready'}
 			]
 		})
@@ -36,6 +38,7 @@ app.serviceCreate = function(events, ws, serverApi, webrtc) {
 
 	sm.ondisconnect = function(){
 		ws.sm.disconnect();
+		if(webrtc.sm.can('stop')) webrtc.sm.stop();
 		clientId = null;
 		peerId = null;
 		matching = [];
@@ -46,7 +49,7 @@ app.serviceCreate = function(events, ws, serverApi, webrtc) {
 		});
 	};
 
-	sm.onconnect = function(){
+	sm.onconnectStart = function(){
 		ws.sm.connect();
 	};
 
@@ -73,14 +76,25 @@ app.serviceCreate = function(events, ws, serverApi, webrtc) {
 		webrtc.sm.start();
 	};
 
+	sm.onendCall = function(){
+		if(webrtc.sm.can('stop')) webrtc.sm.stop();
+	};
+
 
 	events.subAll({
 
-		'state_ws_disconnected': function(){
+		state_ws_connected: function(){
+			sm.connectOk();
+
+			// auto-join after connect
+			sm.joinStart();
+		},
+
+		state_ws_disconnected: function(){
 			sm.disconnect();
 		},
 
-		'rtcSendMsg': function(msg){
+		rtcSendMsg: function(msg){
 
 			serverApi.cmd('send', {
 				id: peerId,
@@ -89,7 +103,11 @@ app.serviceCreate = function(events, ws, serverApi, webrtc) {
 		},
 
 		'state_rtc_idle': function() {
+			if(sm.can('endCall')) sm.endCall();
+		},
 
+		'state_rtc_call': function() {
+			if(sm.can('incomingCall')) sm.incomingCall();
 		},
 
 		'api_join': function(d) {
@@ -126,6 +144,8 @@ app.serviceCreate = function(events, ws, serverApi, webrtc) {
 
 		'api_data': function(d) {
 
+			// todo: check call state, check matching peer
+
 			try {
 				if(!d || !d.data) {
 					alert('error response for api_data'); return;
@@ -151,7 +171,8 @@ app.serviceCreate = function(events, ws, serverApi, webrtc) {
 	});
 
 
-
+	// auto-connect on enter
+	sm.connectStart();
 
 
 
