@@ -38,6 +38,10 @@ app.ngCreate = function() {
 
 		});
 
+		$scope.eventPub = function(en) {
+			events.pub(en);
+		};
+
 
 
 

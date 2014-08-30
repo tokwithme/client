@@ -17,11 +17,11 @@ app.serviceCreate = function(events, ws, serverApi, webrtc) {
 				{name: 'joinStart', 	from: 'out', 			to: 'joining'},
 				{name: 'joinOk', 		from: 'joining', 		to: 'ready'},
 				{name: 'leave', 		from: 'ready', 			to: 'out'},
-				{name: 'findMatch', 	from: 'ready', 			to: 'matching'},
-				{name: 'findMatchFail', from: 'matching', 		to: 'ready'},
-				{name: 'startCall', 	from: 'matching', 		to: 'call'},
-				{name: 'incomingCall', 	from: 'ready', 			to: 'call'},
-				{name: 'endCall', 		from: 'call', 			to: 'ready'}
+				{name: 'startCall', 	from: 'ready', 			to: 'calling'},
+				{name: 'incomingCall', 	from: 'ready', 			to: 'calling'},
+				{name: 'callOk', 		from: 'calling', 		to: 'call'},
+				//{name: 'callFail', 		from: 'calling', 		to: 'out'},
+				{name: 'endCall', 		from: ['call','calling'], 	to: 'out'}
 			]
 		})
 	;
@@ -53,31 +53,41 @@ app.serviceCreate = function(events, ws, serverApi, webrtc) {
 		ws.sm.connect();
 	};
 
-	sm.onjoining = function(){
+	sm.onout = function() {
 
-		var data = {
-			self: 1,
-			other: [1, 2]
-		};
-		serverApi.cmd('join', data);
+	};
+
+	sm.onjoining = function(){
+		var
+			self = 1,
+			other = [1, 2]
+		;
+		serverApi.join(self, other);
 	};
 
 	sm.onleave = function(){
-		serverApi.cmd('leave');
+		serverApi.leave();
 		clientId = null;
 		app.debug({clientId: clientId});
 	};
 
-	sm.onfindMatch = function(){
-		serverApi.cmd('matching');
+	sm.onready = function(){
+		peerId = null;
+		app.debug({peerId: null});
 	};
 
 	sm.onstartCall = function(){
-		webrtc.sm.start();
+		webrtc.sm.start(true);
+	};
+
+	sm.oncallOk = function() {
+		serverApi.leave();
 	};
 
 	sm.onendCall = function(){
 		if(webrtc.sm.can('stop')) webrtc.sm.stop();
+		// auto join after end of the call
+		//sm.joinStart();
 	};
 
 
@@ -95,11 +105,10 @@ app.serviceCreate = function(events, ws, serverApi, webrtc) {
 		},
 
 		rtcSendMsg: function(msg){
+			if(!sm.is('calling')) {alert('state is not call on rtcSendMsg, skipping'); return;}
+			if(!peerId) {alert('no peerId on rtcSendMsg, skipping'); return;}
 
-			serverApi.cmd('send', {
-				id: peerId,
-				data: JSON.stringify(msg)
-			});
+			serverApi.send(peerId, msg);
 		},
 
 		'state_rtc_idle': function() {
@@ -107,7 +116,16 @@ app.serviceCreate = function(events, ws, serverApi, webrtc) {
 		},
 
 		'state_rtc_call': function() {
-			if(sm.can('incomingCall')) sm.incomingCall();
+			//if(sm.can('incomingCall')) sm.incomingCall();
+			// this should be done earlier, at api_data
+		},
+
+		state_rtc_connected: function() {
+			if(sm.can('callOk')) sm.callOk();
+		},
+
+		findMatching: function() {
+			serverApi.matching();
 		},
 
 		'api_join': function(d) {
@@ -122,16 +140,19 @@ app.serviceCreate = function(events, ws, serverApi, webrtc) {
 			//events.pub('matchingStart');
 		},
 
+		api_leave: function(d) {
+			clientId = null;
+			app.debug({clientId: clientId});
+		},
+
 		'api_matching': function(d) {
-			//if(sm.checkWrongState('matching', 'disconnect', 'api_matching')) return;
 			matching = d.list;
 			app.debug({matching: matching.length});
 
-			if(!sm.is('matching')) return; // probably in a call?..
+			if(!sm.is('ready')) return; // probably in a call?..
 
 			if(!matching || !matching.length) {
 				app.log('no matching');
-				sm.findMatchFail();
 				return;
 			}
 			// pick random
@@ -144,8 +165,6 @@ app.serviceCreate = function(events, ws, serverApi, webrtc) {
 
 		'api_data': function(d) {
 
-			// todo: check call state, check matching peer
-
 			try {
 				if(!d || !d.data) {
 					alert('error response for api_data'); return;
@@ -153,19 +172,47 @@ app.serviceCreate = function(events, ws, serverApi, webrtc) {
 
 				var
 					id = d.id,
-					data = JSON.parse(d.data)
+					data = JSON.parse(d.data),
+					cmd = data.cmd,
+					BUSY = 'busy',
+					SDP = 'sdp'
 					;
 
-				// save peer
-				if(!peerId) peerId = id;
+				if(sm.is('ready')) {
+					if(cmd == SDP) {
+						// incoming call proposal
+						peerId = id;
+						app.debug({peerId: peerId});
+						sm.incomingCall();
 
-				//app.log('id: '+id);
-				//app.log(data);
+					} else {
+						app.log('wrong incoming msg at ready state: '+cmd); return;
+					}
+
+				} else if(sm.is('calling')) {
+					if(peerId != id) {
+						// incoming msg from different partner => reply "busy"
+						serverApi.send(id, {
+							cmd: BUSY
+						});
+						return;
+
+					} else if(cmd == BUSY) {
+						// incoming BUSY msg from the peerId that I wanted to call
+						sm.endCall();
+						return;
+					}
+					// otherwise - ok message
+
+				} else {
+					app.log('received data in wrong state: '+sm.current);
+				}
 
 				events.pub('rtcReceiveMsg', data);
 
+
 			} catch(ex) {
-				console.log('Exception in api_data: ', ex);
+				console.error('Exception in api_data: ', ex);
 			}
 		}
 	});
@@ -175,12 +222,11 @@ app.serviceCreate = function(events, ws, serverApi, webrtc) {
 	sm.connectStart();
 
 
-
-	// todo:
-	/*window.onbeforeunload = function()
-	{
-		sendMessage({type: 'bye'});
-	}*/
+	window.onbeforeunload = function(){
+		if(sm.is('call')) {
+			//return 'Leave the active call?';
+		}
+	};
 
 
 	return {

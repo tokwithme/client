@@ -36,12 +36,15 @@ app.webrtcCreate = function(events){
 
 		pc,
 		localStream,
+		isCaller,
+		remoteDescrAdded,
 
 		sm = app.stateCreate('rtc', {
 			initial: 'idle',
 			events: [
 				{name: 'start', 	from: 'idle', 	to: 'call'},
-				{name: 'stop', 		from: 'call', 	to: 'idle'}
+				{name: 'connect', 	from: 'call', 	to: 'connected'},
+				{name: 'stop', 		from: '*', 		to: 'idle'}
 			]
 		})
 	;
@@ -57,6 +60,7 @@ app.webrtcCreate = function(events){
 				pc = null;
 			//}, 0);
 		}
+		remoteDescrAdded = false;
 	};
 
 
@@ -65,7 +69,9 @@ app.webrtcCreate = function(events){
 	}
 
 	// call start() to initiate
-	sm.onstart = function() {
+	sm.onstart = function(a,b,c,_isCaller) {
+
+		isCaller = _isCaller;
 
 		pc = new RTCPeerConnection(pcConfig);
 
@@ -78,8 +84,10 @@ app.webrtcCreate = function(events){
 				//events.pub(en.rtcDisconnect);
 				sm.stop();
 				//reset();
+			} else if(state == 'connected') {
+				sm.connect();
 			}
-			events.pub('rtcIceStateChanged', state);
+			//events.pub('rtcIceStateChanged', state);
 
 		};
 
@@ -101,7 +109,7 @@ app.webrtcCreate = function(events){
 
 		// once remote stream arrives, show it in the remote video element
 		pc.onaddstream = function(event) {
-			console.log("--- Got remote stream! ---");
+			//console.log("--- Got remote stream! ---");
 			//alert('got remote stream');
 
 			events.pub('rtcGotRemoteStream', event.stream);
@@ -161,21 +169,30 @@ app.webrtcCreate = function(events){
 				data = msg.data
 			;
 
-			if(!sm.is('call')) {
+			if(sm.can('start')) {
 				// receive incoming call
 				// send event, start incoming connection on external event
 				//start();
 				sm.start();
 			}
 
+			if(sm.is('connected')) {
+				app.log('rtc msg in connected state, skipping: '+cmd); return;
+			}
+
 			if(cmd == cmsg.sdp) {
 				pc.setRemoteDescription(new RTCSessionDescription(data), function() {
+					remoteDescrAdded = true;
 					// if we received an offer, we need to answer
-					if(pc.remoteDescription.type == "offer")
+					if(pc.remoteDescription.type == "offer") {
 						pc.createAnswer(localDescCreated, logError);
+					}
 				}, logError);
 
 			} else if(cmd == cmsg.candidate) {
+				if(!remoteDescrAdded) {
+					console.error('received Candidate, but remote descr wasn\'t added yet!'); return;
+				}
 				pc.addIceCandidate(new RTCIceCandidate(data));
 
 			} else {

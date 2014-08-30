@@ -24,7 +24,7 @@
 <button id="btnLeave" ng-disabled="clientSm.cannot('leave')" ng-click="clientSm.leave()">Leave</button>
 <br><br>
 
-<button id="btnCall" ng-disabled="clientSm.cannot('findMatch')" ng-click="clientSm.findMatch()">Call Random</button>
+<button id="btnCall" ng-disabled="!clientSm.is('ready')" ng-click="eventPub('findMatching')">Call Random</button>
 <button id="btnHang" ng-disabled="clientSm.cannot('endCall')" ng-click="clientSm.endCall()">Hang Up</button>
 <br><br>
 

@@ -10,15 +10,37 @@ app.serverApiCreate = function(events, ws) {
 		ws.connect(url, reconnect);
 	}
 
-	function disconnect() {
+	/*function disconnect() {
 		ws.sm.disconnect();
-	}
+	}*/
 
 	function cmd(cmd, data) {
 		if(!data) data = {};
 		var o = {};
 		o[cmd] = data;
 		ws.send(o);
+	}
+
+	function send(peerId, msg) {
+		cmd('send', {
+			id: peerId,
+			data: JSON.stringify(msg)
+		});
+	}
+
+	function join(self, other) {
+		cmd('join', {
+			self: self,
+			other: other
+		});
+	}
+
+	function leave() {
+		cmd('leave');
+	}
+
+	function matching() {
+		cmd('matching');
 	}
 
 	events.sub('wsMessage', function(d){
@@ -49,6 +71,10 @@ app.serverApiCreate = function(events, ws) {
 	return {
 		connect: connect,
 		//disconnect: disconnect,
-		cmd: cmd
+		cmd: cmd,
+		send: send,
+		join: join,
+		leave: leave,
+		matching: matching
 	};
 };
