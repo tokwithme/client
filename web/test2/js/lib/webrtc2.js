@@ -2,43 +2,9 @@
 // based on:
 // http://www.w3.org/TR/webrtc/#simple-peer-to-peer-example
 
-app.webrtcCreate = function(events){
+app.webrtcCreate = function(cfg, events){
 
 	var
-		cmsg = {
-			sdp: 'sdp',
-			candidate: 'candidate'
-		},
-
-		pcConfig = {
-			"iceServers": [
-				{"url": "stun:stun.l.google.com:19302"},
-				// ff .urls workaround
-				/*
-				{'url': "turn:23.251.129.26:3478?transport=udp", "credential":"/D+eNYu7YDEKk6cLCeAx0pxZj7o=", "username":"1409228251:72418302"},
-				{'url': "turn:23.251.129.26:3478?transport=tcp", "credential":"/D+eNYu7YDEKk6cLCeAx0pxZj7o=", "username":"1409228251:72418302"},
-				{'url': "turn:23.251.129.26:3479?transport=udp", "credential":"/D+eNYu7YDEKk6cLCeAx0pxZj7o=", "username":"1409228251:72418302"},
-				{'url': "turn:23.251.129.26:3479?transport=tcp", "credential":"/D+eNYu7YDEKk6cLCeAx0pxZj7o=", "username":"1409228251:72418302"}
-				*/
-
-				{
-					"urls":[
-						"turn:23.251.129.26:3478?transport=udp",
-						"turn:23.251.129.26:3478?transport=tcp",
-						"turn:23.251.129.26:3479?transport=udp",
-						"turn:23.251.129.26:3479?transport=tcp"
-					],
-					"credential":"/D+eNYu7YDEKk6cLCeAx0pxZj7o=",
-					"username":"1409228251:72418302"
-				}
-			]
-		},
-
-		pc,
-		localStream,
-		isCaller,
-		remoteDescrAdded,
-
 		sm = app.stateCreate('rtc', {
 			initial: 'idle',
 			events: [
@@ -46,8 +12,31 @@ app.webrtcCreate = function(events){
 				{name: 'connect', 	from: 'call', 	to: 'connected'},
 				{name: 'stop', 		from: '*', 		to: 'idle'}
 			]
-		})
+		}),
+
+		cnst = {
+			CMD_SDP: 'sdp',
+			CMD_CANDIDATE: 'candidate',
+			CMD_BUSY: 'busy',
+			RTC_SEND_MSG: 'rtcSendMsg',
+			RTC_RECEIVE_MSG: 'rtcReceiveMsg',
+			RTC_INCOMING_CALL: 'rtcIncomingCall'
+		},
+
+		pc,
+		localStream,
+		isCaller,
+		peerId,
+		gotUserMediaPromise,
+		gotRemoteSDPPromise,
+		sentMySDPPromise
 	;
+
+	// TODO: validate cfg against schema
+
+
+
+	// State management
 
 
 	sm.onidle = function() {
@@ -56,24 +45,30 @@ app.webrtcCreate = function(events){
 				pc.close();
 			} catch(ign) {}
 
-			//setTimeout(function(){
+			setTimeout(function(){
 				pc = null;
-			//}, 0);
+			}, 100);
 		}
-		remoteDescrAdded = false;
+		peerId = null;
+		gotUserMediaPromise = null;
+		gotRemoteSDPPromise = null;
+		sentMySDPPromise = null;
+		//app.debug({ICE: null});
 	};
 
 
-	function logError(e) {
-		console.log('error', e);
-	}
+	sm.onstart = function(a,b,c, _peerId) {
 
-	// call start() to initiate
-	sm.onstart = function(a,b,c,_isCaller) {
+		gotUserMediaPromise = new $.Deferred();
+		gotRemoteSDPPromise = new $.Deferred();
+		sentMySDPPromise = new $.Deferred();
 
-		isCaller = _isCaller;
+		if(_peerId) {
+			peerId = _peerId;
+			isCaller = true;
+		}
 
-		pc = new RTCPeerConnection(pcConfig);
+		pc = new RTCPeerConnection(cfg.pcConfig);
 
 		pc.oniceconnectionstatechange = function() {
 			if(!pc) return;
@@ -99,13 +94,21 @@ app.webrtcCreate = function(events){
 		// send any ice candidates to the other peer
 		pc.onicecandidate = function(event) {
 			if(!event.candidate) return;
-			rtcChannelSend(cmsg.candidate, event.candidate);
+
+			$.when(gotRemoteSDPPromise, sentMySDPPromise).done(function(){
+				rtcChannelSend(cnst.CMD_CANDIDATE, event.candidate);
+			});
+
 		};
 
 		// let the "negotiationneeded" event trigger offer generation
 		pc.onnegotiationneeded = function() {
-			pc.createOffer(localDescCreated, logError);
-		}
+			// create offer only after UserMedia is received
+			gotUserMediaPromise.done(function(){
+				alert('afterUserMedia');
+				pc.createOffer(localDescCreated, logError);
+			});
+		};
 
 		// once remote stream arrives, show it in the remote video element
 		pc.onaddstream = function(event) {
@@ -118,10 +121,12 @@ app.webrtcCreate = function(events){
 		// get a local stream, show it in a self-view and add it to be sent
 
 
-		getUserMedia({ "video": true }, function(stream) {
+		getUserMedia(cfg.constraints, function(stream) {
 			if(!localStream) localStream = stream;
 			pc.addStream(stream);
 			events.pub('rtcGotLocalStream', stream);
+			app.log('--- got UserMedia');
+			gotUserMediaPromise.resolve();
 
 		}, function(e) {
 			var msg = (e && e.name) ? e.name : 'getUserMedia error';
@@ -132,71 +137,88 @@ app.webrtcCreate = function(events){
 
 	};
 
-	function getUserMedia(constraints, cb, cbErr) {
-		if(localStream) {cb(localStream); return;}
-		navigator.getUserMedia(constraints, cb, cbErr);
-	}
+
+	// Events
 
 
-	function localDescCreated(desc) {
-		//console.log("localDescCreated");
+	events.sub(cnst.RTC_RECEIVE_MSG, function(msg) {
 
-		pc.setLocalDescription(desc, function () {
-
-			rtcChannelSend(cmsg.sdp, desc);
-
-		}, logError);
-	}
-
-
-
-
-
-	function rtcChannelSend(cmd, data) {
-		var msg = {
-			cmd: cmd,
-			data: data
-		};
-		events.pub('rtcSendMsg', msg);
-	}
-
-
-	events.sub('rtcReceiveMsg', function(msg) {
+		// TODO: validate msg
 
 		try {
 			var
-				cmd = msg.cmd,
-				data = msg.data
+				id = msg.id,
+				cmd = msg.data.cmd,
+				data = msg.data.data
 			;
 
-			if(sm.can('start')) {
+
+
+
+			if(sm.is('idle')) {
+				if(cmd != cnst.CMD_SDP) {console.error('rtc got incoming call starting from wrong cmd, ignoring: '+cmd); return;}
+
 				// receive incoming call
 				// send event, start incoming connection on external event
-				//start();
+				peerId = id;
+				events.pub(cnst.RTC_INCOMING_CALL, peerId);
+
 				sm.start();
+
+			} /*else if(sm.is('connected')) {
+				if(cmd == cnst.CMD_CANDIDATE && id == peerId) {
+					// ok
+				} else {
+					app.log('rtc msg in connected state, skipping: '+cmd); return;
+				}
+
+			} */else {
+				// state == connecting
+
+				if(id != peerId) {
+
+					if(cmd == cnst.CMD_SDP) {
+						// incoming call from different partner => reply "busy"
+						events.pub(cnst.RTC_SEND_MSG, {
+							peerId: id,
+							data: {
+								cmd: cnst.CMD_BUSY
+							}
+						});
+					} else {
+						console.error('Wrong incoming call msg from different partner, ignoring: '+cmd);
+					}
+					return;
+				}
+
+				if(cmd == cnst.CMD_BUSY) {
+					// got BUSY reply from the peer
+					sm.stop(); return;
+				}
 			}
 
-			if(sm.is('connected')) {
-				app.log('rtc msg in connected state, skipping: '+cmd); return;
-			}
+			// process msg
 
-			if(cmd == cmsg.sdp) {
+			if(cmd == cnst.CMD_SDP) {
+
 				pc.setRemoteDescription(new RTCSessionDescription(data), function() {
-					remoteDescrAdded = true;
+					gotRemoteSDPPromise.resolve();
 					// if we received an offer, we need to answer
-					if(pc.remoteDescription.type == "offer") {
+					if(pc.remoteDescription.type == "offer" && !isCaller) {
 						pc.createAnswer(localDescCreated, logError);
 					}
 				}, logError);
 
-			} else if(cmd == cmsg.candidate) {
-				if(!remoteDescrAdded) {
-					console.error('received Candidate, but remote descr wasn\'t added yet!'); return;
-				}
-				pc.addIceCandidate(new RTCIceCandidate(data));
+
+			} else if(cmd == cnst.CMD_CANDIDATE) {
+
+				$.when(gotRemoteSDPPromise, sentMySDPPromise).done(function(){
+					pc.addIceCandidate(new RTCIceCandidate(data));
+				});
+
 
 			} else {
-				console.error('unknown message: ', msg);
+				console.error('unknown cmd: ', cmd);
 			}
 
 		} catch(ex) {
@@ -205,14 +227,53 @@ app.webrtcCreate = function(events){
 	});
 
 
+	// API
+
+
+	function getUserMedia(constraints, cb, cbErr) {
+		if(localStream) {cb(localStream); return;}
+		navigator.getUserMedia(constraints, cb, cbErr);
+	}
+
+
+	function localDescCreated(desc) {
+		//console.log("localDescCreated");
+		alert('localDescCreated');
+
+		pc.setLocalDescription(desc, function () {
+
+			rtcChannelSend(cnst.CMD_SDP, desc);
+			sentMySDPPromise.resolve();
+
+		}, logError);
+	}
+
+
+
+	function rtcChannelSend(cmd, data) {
+		gotUserMediaPromise.done(function(){
+			events.pub(cnst.RTC_SEND_MSG, {
+				peerId: peerId,
+				data: {
+					cmd: cmd,
+					data: data
+				}
+			});
+		});
+	}
+
+
+	function logError(e) {
+		console.log('error: ', e);
+	}
+
+
 
 
 	return {
-		sm: sm
-		/*
-		start: function() {sm.start();},
-		stop: function() {sm.stop();}
-		*/
+		sm: sm,
+		cnst: cnst,
+		peerId: peerId
 	};
 };
 

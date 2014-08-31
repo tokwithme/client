@@ -1,18 +1,73 @@
 
 
-app.serverApiCreate = function(events, ws) {
+app.serverApiCreate = function(cfg, events) {
 
 	var
-		reconnect = false
+		sm = app.stateCreate('serverApi', {
+			initial: 'disconnected',
+			events: [
+				{name: 'connect', 		from: 'disconnected', 	to: 'connecting'},
+				{name: 'connectOk', 	from: 'connecting', 	to: 'connected'},
+				{name: 'disconnect', 	from: '*', 				to: 'disconnected'}
+			]
+		}),
+
+		ws = app.wsCreate(cfg.ws, events)
+
 	;
 
-	function connect(url) {
-		ws.connect(url, reconnect);
-	}
+	// State management
 
-	/*function disconnect() {
+	sm.onconnect = function() {
+		ws.sm.connect();
+	};
+
+	sm.ondisconnected = function() {
 		ws.sm.disconnect();
-	}*/
+	};
+
+
+	// Events
+
+	events.subAll({
+
+		state_ws_connected: function(){
+			sm.connectOk();
+		},
+
+		state_ws_disconnected: function(){
+			sm.disconnect();
+		},
+
+		wsMessage: function(d){
+			//app.log(d);
+
+			// TODO: validate incoming message via jsonSchema
+
+			if(Object.keys(d).length < 1) {
+				app.log('empty/wrong server message'); return;
+			}
+
+			try {
+				var
+					cmdName = Object.keys(d)[0],
+					data = d[cmdName]
+				;
+
+				if(!data.ok && !data.data) {
+					console.error('server returned error: '+data.reason); return;
+				}
+
+				events.pub('api_'+cmdName, data);
+
+			} catch(ex) {
+				console.error('Exception in wsMessage: ', ex);
+			}
+		}
+	});
+
+
+	// API
 
 	function cmd(cmd, data) {
 		if(!data) data = {};
@@ -43,38 +98,17 @@ app.serverApiCreate = function(events, ws) {
 		cmd('matching');
 	}
 
-	events.sub('wsMessage', function(d){
-		//app.log(d);
 
-		if(Object.keys(d).length < 1) {
-			app.log('empty/wrong server message'); return;
-		}
-
-		try {
-			var cmdName = Object.keys(d)[0];
-			var data = d[cmdName];
-
-			if(!data.ok && !data.data) {
-				console.error('server returned error: '+data.reason); return;
-			}
-
-			events.pub('api_'+cmdName, data);
-
-		} catch(ex) {
-			app.log('Exception in wsMessage');
-			app.log(ex);
-		}
-	});
 
 
 
 	return {
-		connect: connect,
-		//disconnect: disconnect,
+		sm: sm,
+
 		cmd: cmd,
-		send: send,
-		join: join,
-		leave: leave,
-		matching: matching
+		cmdSend: send,
+		cmdJoin: join,
+		cmdLeave: leave,
+		cmdMatching: matching
 	};
 };

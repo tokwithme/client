@@ -7,13 +7,13 @@
 
 		ng = app.ngCreate(),
 
-		ws = app.wsCreate(events),
+		//ws = app.wsCreate(events),
 		//view = app.viewCreate(events),
-		serverApi = app.serverApiCreate(events, ws),
+		//serverApi = app.serverApiCreate(events, ws),
 		//clientApi = app.clientApiCreate(),
-		webrtc = app.webrtcCreate(events),
+		//webrtc = app.webrtcCreate(events),
 
-		service = app.serviceCreate(events, ws, serverApi, webrtc)
+		client = app.clientCreate(events)
 	;
 
 

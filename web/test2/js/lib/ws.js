@@ -1,13 +1,22 @@
 
-app.wsCreate = function(events) {
+app.wsCreate = function(cfg, events) {
 
 	var
+		sm = app.stateCreate('ws', {
+			initial: 'disconnected',
+			events: [
+				{name: 'connect', 		from: 'disconnected', 	to: 'connecting'},
+				{name: 'connectOk', 	from: 'connecting', 	to: 'connected'},
+				{name: 'disconnect', 	from: '*', 				to: 'disconnected'}
+			]
+		}),
+
+		cnst = {
+			WS_MESSAGE: 'wsMessage'
+		},
+
 		enabled = ("WebSocket" in window),
 
-		cfg = {
-			url: null,
-			reconnectEnabled: false
-		},
 		// reconnect settings
 
 		rc = {
@@ -18,18 +27,11 @@ app.wsCreate = function(events) {
 		},
 
 		sock,
-		ts,
-
-		sm = app.stateCreate('ws', {
-			initial: 'disconnected',
-			events: [
-				{name: 'connect', 		from: 'disconnected', 	to: 'connecting'},
-				{name: 'connectOk', 	from: 'connecting', 	to: 'connected'},
-				{name: 'disconnect', 	from: '*', 				to: 'disconnected'}
-			]
-		})
+		ts
 	;
 
+
+	// State management
 
 	sm.ondisconnected = function() {
 
@@ -98,7 +100,7 @@ app.wsCreate = function(events) {
 			return;
 		}
 
-		events.pub('wsMessage', msg);
+		events.pub(cnst.WS_MESSAGE, msg);
 
 	}
 
@@ -114,18 +116,9 @@ app.wsCreate = function(events) {
 
 
 	return {
-		setCfg: function(_cfg) {
-			cfg = _cfg;
-		},
 		sm: sm,
-		/*
-		connect: function() {
-			sm.connect.apply(sm, arguments);
-		},
-		disconnect: function(){
-			sm.disconnect();
-		},
-		*/
+		cnst: cnst,
+
 		send: send
 	};
 };

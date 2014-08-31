@@ -1,8 +1,0 @@
-
-
-app.clientApiCreate = function() {
-
-	return {
-
-	};
-};
