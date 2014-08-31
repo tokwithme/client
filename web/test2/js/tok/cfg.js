@@ -22,6 +22,11 @@ app.cfg = (function(){
 			},
 			pcConfig: {
 				iceServers: iceServersGoogle
+			},
+			pcConfigOptional: {
+				optional: [{
+					DtlsSrtpKeyAgreement: true
+				}]
 			}
 		},
 

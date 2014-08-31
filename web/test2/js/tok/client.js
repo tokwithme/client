@@ -34,8 +34,8 @@ app.clientCreate = function(events) {
 	//events.pub('connectServerStart');
 
 	sm.ondisconnect = function(){
-		serverApi.sm.disconnect();
 		if(webrtc.sm.can('stop')) webrtc.sm.stop();
+		serverApi.sm.disconnect();
 		clientId = null;
 		matching = [];
 		app.debug({
@@ -122,7 +122,7 @@ app.clientCreate = function(events) {
 			serverApi.cmdMatching();
 		},
 
-		'api_join': function(d) {
+		api_join: function(d) {
 			if(sm.checkWrongState('joining', 'disconnect', 'api_join')) return;
 
 			clientId = d.id;
@@ -166,7 +166,7 @@ app.clientCreate = function(events) {
 
 	window.onbeforeunload = function(){
 		if(sm.is('call')) {
-			//return 'Leave the active call?';
+			sm.endCall(); // will politely send 'bye' before closing
 		}
 	};
 
