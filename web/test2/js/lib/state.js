@@ -18,7 +18,7 @@ app.stateCreate = function(name, cfg) {
 	};
 
 	function onbeforeevent(en,from,to){
-		//if(en != 'startup') app.log('--- '+name+' --- '+from+' > '+to+' ('+en+')');
+		//if(en != 'startup') console.log('--- '+name+' --- '+from+' > '+to+' ('+en+')');
 		if(app.debug && (from != to)) {
 			var kv = {};
 			kv[name.toUpperCase()] = from+' > '+to+' ('+en+')';
@@ -27,7 +27,7 @@ app.stateCreate = function(name, cfg) {
 	}
 
 	function onenterstate(en,from,to){
-		app.log('--- '+name+' --- '+to);
+		console.log('--- '+name+' --- '+to);
 		if(app.debug) {
 			var kv = {};
 			kv[name.toUpperCase()] = to;

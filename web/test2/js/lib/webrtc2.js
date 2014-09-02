@@ -41,6 +41,8 @@ app.webrtcCreate = function(cfg, events){
 
 			p.pc = null;
 		}
+
+		clearTimeout(p.toConnect);
 		p = {};
 		promise = {
 			gotUserMedia: new $.Deferred(),
@@ -59,7 +61,7 @@ app.webrtcCreate = function(cfg, events){
 
 	sm.onbeforestop = function(a,from,c, noBye) {
 		// send 'bye' before closing
-		if(from == 'connected' && !noBye) {
+		if(from != 'idle' && !noBye) {
 			rtcChannelSend(cnst.CMD_BYE);
 		}
 	};
@@ -72,7 +74,6 @@ app.webrtcCreate = function(cfg, events){
 			p.isCaller = true;
 		}
 
-
 		p.pc = new RTCPeerConnection(cfg.pcConfig, cfg.pcConfigOptional);
 
 
@@ -80,24 +81,25 @@ app.webrtcCreate = function(cfg, events){
 			//if(!pc) return;
 			//var state = pc.iceConnectionState;
 			var state = ev.target.iceConnectionState;
-			app.log('--- ICE state: '+state);
+			console.log('--- ICE state: '+state);
 			app.debug({ICE: state});
-			if(state == 'disconnected') {
+			if(state == 'disconnected' || state == 'closed') {
 				//events.pub(en.rtcDisconnect);
 				sm.stop();
 				//reset();
 			} else if(state == 'connected') {
+				clearTimeout(p.toConnect);
 				promise.connected.resolve();
 				sm.connect();
 			}
 			//events.pub('rtcIceStateChanged', state);
-			//if(pc) app.log(pc.getStats());
+			//if(pc) console.log(pc.getStats());
 
 		};
 
 		p.pc.onsignalingstatechange = function() {
 			if(!p.pc) return;
-			app.log('Signaling state: '+p.pc.signalingState);
+			console.log('Signaling state: '+p.pc.signalingState);
 		};
 
 
@@ -114,7 +116,7 @@ app.webrtcCreate = function(cfg, events){
 		if(p.isCaller) {
 			promise.gotUserMedia.done(function(){
 				//alert('creating OFFER');
-				p.pc.createOffer(localDescCreated, logError);
+				p.pc.createOffer(localDescCreated, fatalError);
 			});
 		}
 
@@ -134,25 +136,31 @@ app.webrtcCreate = function(cfg, events){
 
 		// get a local stream, show it in a self-view and add it to be sent
 
-		getUserMedia(cfg.constraints, function(stream) {
-			if(!localStream) localStream = stream;
-			p.pc.addStream(stream);
-			//promise.gotRemoteSDP.done(function(){
+		getUserMedia(cfg.constraints).then(
+			function(stream) {
+				p.pc.addStream(stream);
+				//promise.gotRemoteSDP.done(function(){
 				events.pub('rtcGotLocalStream', stream);
-			//});
+				//});
 
-			app.log('--- got UserMedia');
-			promise.gotUserMedia.resolve();
+				console.log('--- got UserMedia');
+				promise.gotUserMedia.resolve();
 
-		}, function(e) {
-			var msg = (e && e.name) ? e.name : 'getUserMedia error';
-			alert(msg);
-			sm.stop();
-		});
+				if(cfg.connectTimeoutSec)
+					p.toConnect = setTimeout(function(){
+						console.log('Connection timeout reached, closing.');
+						sm.stop();
+					}, cfg.connectTimeoutSec*1000);
 
+			},
 
-
-
+			function(ex) {
+				console.error('getUserMedia error: ', ex);
+				var msg = (ex && ex.name) ? ex.name : 'getUserMedia error';
+				alert(msg);
+				sm.stop(true);
+			}
+		);
 	};
 
 
@@ -181,9 +189,11 @@ app.webrtcCreate = function(cfg, events){
 				p.peerId = id;
 				events.pub(cnst.RTC_INCOMING_CALL, p.peerId);
 
+				//return; // pro tip: uncomment to test connection timeout
 				sm.start();
 
 			} else {
+				// not idle
 
 				if(id != p.peerId) {
 
@@ -203,9 +213,9 @@ app.webrtcCreate = function(cfg, events){
 
 				if(cmd == cnst.CMD_BUSY) {
 					// got BUSY reply from the peer
-					sm.stop(); return;
+					sm.stop(true); return;
 				} else if(cmd == cnst.CMD_BYE) {
-					app.log('received BYE from remote peer, disconnecting');
+					console.log('received BYE from remote peer, disconnecting');
 					sm.stop(true); return;
 				}
 			}
@@ -221,11 +231,9 @@ app.webrtcCreate = function(cfg, events){
 						promise.gotRemoteSDP.resolve();
 						// if we received an offer, we need to answer
 						if(p.pc.remoteDescription.type == "offer" && !p.isCaller) {
-							p.pc.createAnswer(localDescCreated, logError);
+							p.pc.createAnswer(localDescCreated, fatalError);
 						}
-					}, function(ex){
-						console.error('Failed to set remote description: ', ex);
-					});
+					}, fatalError);
 				});
 
 
@@ -249,9 +257,18 @@ app.webrtcCreate = function(cfg, events){
 	// API
 
 
-	function getUserMedia(constraints, cb, cbErr) {
-		if(localStream) {cb(localStream); return;}
-		navigator.getUserMedia(constraints, cb, cbErr);
+	function getUserMedia(constraints) {
+		var def = new $.Deferred();
+
+		if(localStream) def.resolve(localStream);
+
+		navigator.getUserMedia(constraints, function(stream){
+			localStream = stream;
+			def.resolve(stream);
+		}, function(ex){
+			def.reject(ex);
+		});
+		return def.promise();
 	}
 
 
@@ -266,10 +283,7 @@ app.webrtcCreate = function(cfg, events){
 			rtcChannelSend(cnst.CMD_SDP, desc);
 			promise.sentMySDP.resolve();
 
-		}, function(ex){
-			console.error('Failed to set local description: ', ex);
-			console.log(desc);
-		});
+		}, fatalError);
 	}
 
 
@@ -286,18 +300,16 @@ app.webrtcCreate = function(cfg, events){
 		});
 	}
 
-
-	function logError(e) {
-		console.error('error: ', e);
+	function fatalError(ex) {
+		console.error('fatal error: ', ex);
+		sm.stop(); // will send 'bye' command
 	}
-
-
 
 
 	return {
 		sm: sm,
 		cnst: cnst,
-		peerId: p.peerId
+		p: p
 	};
 };
 

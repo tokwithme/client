@@ -39,7 +39,11 @@ app.events = (function(){
 		// Cycle through topics queue, fire!
 		var items = topics[topic].queue;
 		for(var i=0; i<items.length; i++) {
-			items[i](info);
+			try {
+				items[i](info);
+			} catch(ex) {
+				console.error(topic+' event caused exception: ', ex);
+			}
 		}
 	};
 

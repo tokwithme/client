@@ -50,7 +50,7 @@ app.wsCreate = function(cfg, events) {
 	sm.onconnecting = function() {
 		if(!enabled) {console.log('WebSocket not supported'); return false;}
 
-		app.log('ws connecting to '+cfg.url);
+		console.log('ws connecting to '+cfg.url);
 
 		sock = new WebSocket(cfg.url);
 		sock.onopen = onOpen;
@@ -71,14 +71,14 @@ app.wsCreate = function(cfg, events) {
 	}
 
 	function onClose() {
-		app.log('ws close');
+		console.log('ws close');
 
 		sm.disconnect();
 
 		// schedule reconnect
 		if(!cfg.reconnectEnabled) return;
 
-		app.log('ws reconnect in '+parseInt(rc.cur)+' sec');
+		console.log('ws reconnect in '+parseInt(rc.cur)+' sec');
 		setTimeout(function(){
 			sm.connect();
 		}, parseInt(rc.cur*1000));
@@ -89,14 +89,14 @@ app.wsCreate = function(cfg, events) {
 	}
 
 	function onMessage(e) {
-		app.log(' <- '+e.data);
+		console.log(' <- '+e.data);
 
 		var msg;
 
 		try {
 			msg = JSON.parse(e.data);
 		} catch(ex) {
-			app.log('ws error parsing json msg: '+e.data);
+			console.error('ws error parsing json msg: '+e.data);
 			return;
 		}
 
@@ -105,10 +105,10 @@ app.wsCreate = function(cfg, events) {
 	}
 
 	function send(data) {
-		if(!sm.is('connected')) {app.log('ws: not connected');return false;}
+		if(!sm.is('connected')) {console.log('ws: not connected');return false;}
 
 		if(typeof data != 'string') data = JSON.stringify(data);
-		app.log(' -> '+data);
+		console.log(' -> '+data);
 		sock.send(data);
 	}
 

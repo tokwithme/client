@@ -17,6 +17,7 @@ app.cfg = (function(){
 		],
 
 		webrtc = {
+			connectTimeoutSec: 15,
 			constraints: {
 				video: true
 			},
