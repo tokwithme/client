@@ -16,6 +16,23 @@
 		client = app.clientCreate(events)
 	;
 
+	return;
+
+	var resp = {
+		join: {
+			ok: true,
+			id: '5405d1cef638eb2403a4c1bf1'
+		}
+	};
+
+	var schema = app.valid.api;
+
+	tv4.addSchema(app.valid.apiJoinResp);
+
+	var res = tv4.validateResult(resp, schema);
+	console.log(resp);
+	console.log(res);
+	//console.log(tv4.error);
 
 
 })();

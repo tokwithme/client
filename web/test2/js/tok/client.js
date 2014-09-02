@@ -22,8 +22,7 @@ app.clientCreate = function(events) {
 		webrtc = app.webrtcCreate(app.cfg.webrtc, events),
 		rtcChannel = app.rtcChannelCreate(events, webrtc, serverApi),
 
-		clientId,
-		matching = []
+		p = {}
 
 	;
 
@@ -36,8 +35,9 @@ app.clientCreate = function(events) {
 	sm.ondisconnect = function(){
 		if(webrtc.sm.can('stop')) webrtc.sm.stop();
 		serverApi.sm.disconnect();
-		clientId = null;
-		matching = [];
+		p = {
+			matching: []
+		};
 		app.debug({
 			clientId: null,
 			peerId: null,
@@ -63,8 +63,8 @@ app.clientCreate = function(events) {
 
 	sm.onleave = function(){
 		serverApi.cmdLeave();
-		clientId = null;
-		app.debug({clientId: clientId});
+		p.clientId = null;
+		app.debug({clientId: null});
 	};
 
 	sm.onready = function(){
@@ -77,7 +77,11 @@ app.clientCreate = function(events) {
 
 	sm.oncallOk = function() {
 		// wait, we're not really fully connected at this step
-		//serverApi.cmdLeave();
+		/*
+		serverApi.cmdLeave();
+		p.clientId = null;
+		app.debug({clientId: null});
+		*/
 	};
 
 	sm.onendCall = function(){
@@ -125,8 +129,8 @@ app.clientCreate = function(events) {
 		api_join: function(d) {
 			if(sm.checkWrongState('joining', 'disconnect', 'api_join')) return;
 
-			clientId = d.id;
-			app.debug({clientId: clientId});
+			p.clientId = d.id;
+			app.debug({clientId: p.clientId});
 
 			sm.joinOk();
 
@@ -134,29 +138,30 @@ app.clientCreate = function(events) {
 			//events.pub('matchingStart');
 		},
 
-		api_leave: function(d) {
-			clientId = null;
-			app.debug({clientId: clientId});
-		},
 
 		api_matching: function(d) {
-			matching = d.list;
-			app.debug({matching: matching.length});
+			p.matching = d.list;
+			app.debug({matching: p.matching.length});
 
 			if(!sm.is('ready')) return; // probably in a call?..
 
-			if(!matching || !matching.length) {
-				app.log('no matching');
+			if(!p.matching || !p.matching.length) {
+				console.log('no matching');
 				return;
 			}
 			// pick random
-			var i = app.getRandomInt(0, matching.length);
-			var peerId = matching[i];
+			var i = app.getRandomInt(0, p.matching.length);
+			var peerId = p.matching[i];
 			app.debug({peerId: peerId});
 
 			sm.startCall(peerId);
 		}
 
+	});
+
+	events.sub(webrtc.cnst.RTC_INCOMING_CALL, function(peerId) {
+		p.peerId = peerId;
+		app.debug({peerId: peerId});
 	});
 
 
@@ -172,6 +177,6 @@ app.clientCreate = function(events) {
 
 
 	return {
-
+		p: p
 	};
 };

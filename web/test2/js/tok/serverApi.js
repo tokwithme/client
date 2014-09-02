@@ -40,12 +40,12 @@ app.serverApiCreate = function(cfg, events) {
 		},
 
 		wsMessage: function(d){
-			//app.log(d);
+			//console.log(d);
 
 			// TODO: validate incoming message via jsonSchema
 
 			if(Object.keys(d).length < 1) {
-				app.log('empty/wrong server message'); return;
+				console.error('empty/wrong server message'); return;
 			}
 
 			try {
