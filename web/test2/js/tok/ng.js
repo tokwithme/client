@@ -7,13 +7,9 @@ app.ngCreate = function() {
 		events = app.events
 	;
 
-	ngApp.controller('mainCtrl', ['$scope', '$sce', '$http', '$localStorage', '$location', function ($scope, $sce, $http, $localStorage, $location) {
+	//ngApp.controller('mainCtrl', ['$scope', '$sce', '$http', '$localStorage', '$location', function ($scope, $sce, $http, $localStorage, $location) {
+	ngApp.controller('mainCtrl', ['$scope', '$sce', function ($scope, $sce) {
 
-
-		/*events.sub('state_ws', function(sm) {
-			$scope.wsSm = sm;
-			if(!$scope.$$phase) $scope.$apply();
-		});*/
 
 		events.subAll({
 
@@ -31,9 +27,11 @@ app.ngCreate = function() {
 			},
 
 			state_rtc_idle: function() {
-				$scope.localVideoSrc = $sce.trustAsResourceUrl('//:0');
-				$scope.remoteVideoSrc = $sce.trustAsResourceUrl('//:0');
-				if(!$scope.$$phase) $scope.$apply();
+				//$scope.localVideoSrc = $sce.trustAsResourceUrl('//:0');
+				//$scope.remoteVideoSrc = $sce.trustAsResourceUrl('//:0');
+				//if(!$scope.$$phase) $scope.$apply();
+				// jq workaround to set src="" (need for FF)
+				$('video').removeAttr('src');
 			}
 
 		});
