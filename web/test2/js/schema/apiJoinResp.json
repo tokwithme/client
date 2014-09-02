@@ -1,0 +1,19 @@
+{
+	"id": "joinReqSchema#",
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"description": "abc",
+
+	"type": "object",
+
+	"properties": {
+		"id": {
+			"type": "string",
+			"pattern": "[0-9a-f]{24}"
+		},
+		"ok": {
+			"type": "boolean"
+		}
+	},
+
+	"required": ["ok"]
+}

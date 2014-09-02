@@ -29,7 +29,8 @@ app.webrtcCreate = function(cfg, events){
 		promise = {}
 	;
 
-	// TODO: validate cfg against schema
+
+	// State reset
 
 	reset();
 
