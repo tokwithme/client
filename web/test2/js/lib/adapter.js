@@ -38,15 +38,30 @@ function trace(text) {
 }
 
 function maybeFixConfiguration(pcConfig) {
-	if (!pcConfig) {
-		return;
-	}
-	for (var i = 0; i < pcConfig.iceServers.length; i++) {
-		if (pcConfig.iceServers[i].hasOwnProperty('urls')) {
-			pcConfig.iceServers[i].url = pcConfig.iceServers[i].urls;
-			delete pcConfig.iceServers[i].urls;
+
+	if (!pcConfig || !pcConfig.iceServers) return;
+
+	var a = [];
+
+	for(var i=0; i<pcConfig.iceServers.length; i++) {
+		var item = pcConfig.iceServers[i];
+		if(item.urls) {
+			for(var j=0; j<item.urls.length; j++) {
+				var itm = $.extend({
+					url: item.urls[j]
+				}, item);
+				delete itm.urls;
+				a.push(itm);
+			}
+		} else {
+			a.push(item); // passthrough
 		}
+
 	}
+
+	//console.log(a);
+	pcConfig.iceServers = a;
+
 }
 
 if (navigator.mozGetUserMedia) {
@@ -61,7 +76,6 @@ if (navigator.mozGetUserMedia) {
 	RTCPeerConnection = function(pcConfig, pcConstraints) {
 		// .urls is not supported in FF yet.
 		maybeFixConfiguration(pcConfig);
-		console.log(pcConfig);
 		return new mozRTCPeerConnection(pcConfig, pcConstraints);
 	};
 
