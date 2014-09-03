@@ -7,32 +7,69 @@
 
 		ng = app.ngCreate(),
 
-		//ws = app.wsCreate(events),
-		//view = app.viewCreate(events),
-		//serverApi = app.serverApiCreate(events, ws),
-		//clientApi = app.clientApiCreate(),
-		//webrtc = app.webrtcCreate(events),
-
 		client = app.clientCreate(events)
 	;
 
-	return;
 
-	var resp = {
-		join: {
-			ok: true,
-			id: '5405d1cef638eb2403a4c1bf1'
+
+	// Server API validation test
+
+	/*
+	var
+		resps = [
+			{
+				join: {
+					ok: true,
+					id: '5405d1cef638eb2403a4c1bf'
+				}
+			},
+
+			{
+				leave: {
+					ok: true
+				}
+			},
+
+			{
+				matching: {
+					ok: true,
+					list: []
+				}
+			},
+
+			{
+				send: {
+					ok: true
+				}
+			},
+
+			{
+				data: {
+					ok: true,
+					id: '1234'
+				}
+			}
+		]
+	;
+
+
+
+	var schema = app.apiSchema;
+	tv4.addSchema(app.apiSchema);
+
+	for(var i=0; i<resps.length; i++) {
+		var res = tv4.validateResult(resps[i], schema);
+		console.log(res);
+		if(res.error) {
+			console.log(resps[i]);
+			console.error(res.error.message);
 		}
-	};
+	}
+*/
 
-	var schema = app.valid.api;
 
-	tv4.addSchema(app.valid.apiJoinResp);
 
-	var res = tv4.validateResult(resp, schema);
-	console.log(resp);
-	console.log(res);
-	//console.log(tv4.error);
+
 
 
 })();

@@ -16,6 +16,10 @@ app.serverApiCreate = function(cfg, events) {
 
 	;
 
+	// Init
+
+	tv4.addSchema(app.apiSchema);
+
 	// State management
 
 	sm.onconnect = function() {
@@ -42,13 +46,17 @@ app.serverApiCreate = function(cfg, events) {
 		wsMessage: function(d){
 			//console.log(d);
 
-			// TODO: validate incoming message via jsonSchema
-
+			/*
 			if(Object.keys(d).length < 1) {
 				console.error('empty/wrong server message'); return;
 			}
+			*/
 
 			try {
+
+				// validate incoming message with jsonSchema
+				validateMessage(d);
+
 				var
 					cmdName = Object.keys(d)[0],
 					data = d[cmdName]
@@ -65,6 +73,16 @@ app.serverApiCreate = function(cfg, events) {
 			}
 		}
 	});
+
+	function validateMessage(d) {
+		var res = tv4.validateResult(d, app.apiSchema);
+		if(res.error) {
+			console.error('ws msg validation error: '+res.error.message);
+			console.log(res.error);
+			console.log(d);
+			throw new Error('Validation error');
+		}
+	}
 
 
 	// API
