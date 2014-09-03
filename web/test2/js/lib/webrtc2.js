@@ -43,6 +43,7 @@ app.webrtcCreate = function(cfg, events){
 			p.pc = null;
 		}
 
+		// localStream = null; // uncomment to free the cached UserMedia object ("using media" icon will be removed from the browser)
 		clearTimeout(p.toConnect);
 		p = {};
 		promise = {
@@ -261,14 +262,17 @@ app.webrtcCreate = function(cfg, events){
 	function getUserMedia(constraints) {
 		var def = new $.Deferred();
 
-		if(localStream) def.resolve(localStream);
+		if(localStream) {
+			def.resolve(localStream);
+		} else {
+			navigator.getUserMedia(constraints, function(stream){
+				localStream = stream;
+				def.resolve(stream);
+			}, function(ex){
+				def.reject(ex);
+			});
+		}
 
-		navigator.getUserMedia(constraints, function(stream){
-			localStream = stream;
-			def.resolve(stream);
-		}, function(ex){
-			def.reject(ex);
-		});
 		return def.promise();
 	}
 
