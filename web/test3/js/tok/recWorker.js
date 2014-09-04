@@ -5,6 +5,7 @@ var recLength = 0,
 	sampleRate;
 
 this.onmessage = function(e){
+
 	switch(e.data.command){
 		case 'init':
 			init(e.data.config);
@@ -15,12 +16,17 @@ this.onmessage = function(e){
 		case 'exportWAV':
 			exportWAV(e.data.type);
 			break;
+		case 'exportMonoWAV':
+			exportMonoWAV(e.data.type);
+			break;
 		case 'getBuffer':
 			getBuffer();
 			break;
 		case 'clear':
 			clear();
 			break;
+		default:
+			this.postMessage('unknown cmd: '+ e.data.command);
 	}
 };
 
@@ -42,6 +48,14 @@ function exportWAV(type){
 	var audioBlob = new Blob([dataview], { type: type });
 
 	// TODO: use Transferrable objects here not to duplicate the blob
+	this.postMessage(audioBlob);
+}
+
+function exportMonoWAV(type){
+	var bufferL = mergeBuffers(recBuffersL, recLength);
+	var dataview = encodeWAV(bufferL, true);
+	var audioBlob = new Blob([dataview], { type: type });
+
 	this.postMessage(audioBlob);
 }
 
@@ -96,7 +110,7 @@ function writeString(view, offset, string){
 	}
 }
 
-function encodeWAV(samples){
+function encodeWAV(samples, mono){
 	var buffer = new ArrayBuffer(44 + samples.length * 2);
 	var view = new DataView(buffer);
 
@@ -113,7 +127,7 @@ function encodeWAV(samples){
 	/* sample format (raw) */
 	view.setUint16(20, 1, true);
 	/* channel count */
-	view.setUint16(22, 2, true);
+	view.setUint16(22, mono ? 1 : 2, true);
 	/* sample rate */
 	view.setUint32(24, sampleRate, true);
 	/* byte rate (sample rate * block align) */

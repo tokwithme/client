@@ -39,9 +39,17 @@ app.recCreate = function(events, cfg) {
 	function reset() {
 		if(p.worker) {
 			// terminate the worker
-			p.worker.terminate();
+			try {
+				p.worker.postMessage({ command: 'clear' });
+				p.worker.terminate();
+			} catch(ign){}
+			p.node.disconnect();
+			p.input.disconnect();
 		}
 
+		p.input = null;
+		p.audioContext = null;
+		p.node = null;
 		p = {}; // this should destroy the AudioContext and everything (check it!)
 	}
 
@@ -63,20 +71,16 @@ app.recCreate = function(events, cfg) {
 		);
 
 		function gotStream(stream) {
-			//console.log('gotStream', stream);
 
+			//p.input = convertToMono(p.audioContext.createMediaStreamSource(stream));
 			p.input = p.audioContext.createMediaStreamSource(stream);
 
 			//p.input.connect(p.audioContext.destination); // comment this to remove echo?
-
-
 
 			// start of recorder.js init
 			var ctx = p.input.context;
 			p.node = (ctx.createScriptProcessor || ctx.createJavaScriptNode).call(ctx, cfg.bufferLen, 2, 2);
 
-			// we will reuse this worker
-			// OR should we destroy it immediately after complete?
 			p.worker = new Worker('js/tok/recWorker.js');
 
 			p.worker.postMessage({
@@ -88,7 +92,8 @@ app.recCreate = function(events, cfg) {
 
 
 			p.node.onaudioprocess = function(e){
-				//if (!recording) return;
+				if(!sm.is('recording')) {console.log('onaudioprocess in non-recording state!'); return;}
+
 				p.worker.postMessage({
 					command: 'record',
 					buffer: [
@@ -98,35 +103,23 @@ app.recCreate = function(events, cfg) {
 				});
 			};
 
-
-			/*
-
-			this.getBuffer = function(cb) {
-				currCallback = cb || config.callback;
-				worker.postMessage({ command: 'getBuffer' })
-			}
-			*/
-
-
-
 			p.input.connect(p.node);
-			//this.node.connect(this.context.destination);    //this should not be necessary
-
-
+			p.node.connect(ctx.destination);
 		}
 
 	};
 
 	sm.onstop = function(){
 
-		//p.worker.postMessage({ command: 'clear' });
-
+		p.node.disconnect();
 
 		p.worker.onmessage = function(e){
+			if(typeof e.data == 'string') {
+				console.log(e.data); return;
+			}
 			var blob = e.data;
-			console.log('worker onmessage ', e);
-			console.log('GOT BLOB');
-			createDownloadLink(blob);
+			events.pub('recBlobSave', blob);
+
 			sm.done();
 		};
 
@@ -137,28 +130,20 @@ app.recCreate = function(events, cfg) {
 			type: type
 		});
 
-		function createDownloadLink(blob) {
-			var url = URL.createObjectURL(blob);
-			var li = document.createElement('li');
-			var au = document.createElement('audio');
-			var hf = document.createElement('a');
-
-			au.controls = true;
-			au.src = url;
-			hf.href = url;
-			hf.download = new Date().toISOString() + '.wav';
-			hf.innerHTML = hf.download;
-			li.appendChild(au);
-			li.appendChild(hf);
-			$('#dlink').get(0).appendChild(li);
-		}
-
-
-
 	};
 
 
 	//
+
+	function convertToMono(input) {
+		var splitter = p.audioContext.createChannelSplitter(2);
+		var merger = p.audioContext.createChannelMerger(2);
+
+		input.connect( splitter );
+		splitter.connect( merger, 0, 0 );
+		splitter.connect( merger, 0, 1 );
+		return merger;
+	}
 
 
 

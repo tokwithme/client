@@ -15,18 +15,20 @@
 </head>
 <body ng-controller="test3Ctrl">
 
-Stored audio: yes
-<button id="btnDelete" ng-cloak1 ng-disabled1="clientSm.cannot('connectStart')" ng-click1="clientSm.connectStart()">Delete</button>
-<button id="btnPlay" ng-cloak1 ng-disabled1="clientSm.cannot('connectStart')" ng-click1="clientSm.connectStart()">Play</button>
-<br><br>
+<div ng-show="ls.audio" ng-cloak>
+	Stored audio:
+	<audio controls ng-src="{{audioSrc}}"></audio>
+	<button id="btnDelete" ng-click="deleteAudio()">Delete</button>
+	<a ng-href="{{audioSrc}}" download="audio.wav">Download</a>
+	<br><br>
+</div>
 
 <button id="btnRec" ng-disabled="recSm.cannot('start')" ng-click="recSm.start()">Record</button>
 <button id="btnRecStop" ng-disabled="recSm.cannot('stop')" ng-click="recSm.stop()">Stop</button>
 <button id="btnRecAbort" ng-disabled="recSm.is('idle')" ng-click="recSm.abort()">Abort</button>
 10 sec
 
-<br><br>
-<div id="dlink"></div>
+
 
 <div id="debug"></div>
 
