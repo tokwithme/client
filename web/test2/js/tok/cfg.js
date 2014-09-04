@@ -20,6 +20,7 @@ app.cfg = (function(){
 			connectTimeoutSec: 15,
 			constraints: {
 				video: true
+				//audio: true
 			},
 			pcConfig: {
 				iceServers: iceServersGoogle

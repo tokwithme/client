@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+	<title>TokWithMe Test3</title>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="debug.css">
+
+	<style>[ng-cloak] {display: none !important;}</style>
+</head>
+<body ng-controller="test3Ctrl">
+
+Stored audio: yes
+<button id="btnDelete" ng-cloak1 ng-disabled1="clientSm.cannot('connectStart')" ng-click1="clientSm.connectStart()">Delete</button>
+<button id="btnPlay" ng-cloak1 ng-disabled1="clientSm.cannot('connectStart')" ng-click1="clientSm.connectStart()">Play</button>
+<br><br>
+
+<button id="btnRec" ng-disabled="recSm.cannot('start')" ng-click="recSm.start()">Record</button>
+<button id="btnRecStop" ng-disabled="recSm.cannot('stop')" ng-click="recSm.stop()">Stop</button>
+<button id="btnRecAbort" ng-disabled="recSm.is('idle')" ng-click="recSm.abort()">Abort</button>
+10 sec
+
+<br><br>
+<div id="dlink"></div>
+
+<div id="debug"></div>
+
+
+
+
+
+
+<!-- scripts -->
+
+<script src="/build/bower.js"></script>
+
+
+<script src="js/app.js"></script>
+
+<script src="/js/lib/events.js"></script>
+<script src="/js/lib/ws.js"></script>
+<script src="/js/lib/state.js"></script>
+<script src="/js/lib/usermedia.js"></script>
+
+<script src="js/tok/cfg.js"></script>
+<script src="js/tok/debug.js"></script>
+<script src="js/tok/client.js"></script>
+<script src="js/tok/rec.js"></script>
+
+<script src="js/tok/ng.js"></script>
+
+<script src="js/main.js"></script>
+
+
+
+
+</body>
+</html>
