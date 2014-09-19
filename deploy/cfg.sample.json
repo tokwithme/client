@@ -1,0 +1,35 @@
+{
+	"server": {
+		"def": {
+			"sshconfig": {
+				"host": 	"example.com",
+				"port": 	22,
+				"username":	"root",
+				"password":	"secret"
+			},
+			"path": "/var/www/example.com",
+			"url": "http://example.com"
+		}
+	},
+
+	"deploy": {
+		"quick": [
+			". /root/.ssh/env",
+			"cd <%= cfg.serverCfg.path %>",
+			"git reset --hard HEAD",
+			"git checkout dev",
+			"git pull",
+			"grunt"
+		],
+		"full": [
+			". /root/.ssh/env",
+			"cd <%= cfg.serverCfg.path %>",
+			"git reset --hard HEAD",
+			"git checkout dev",
+			"git pull",
+			"npm install",
+			"bower --allow-root install",
+			"grunt"
+		]
+	}
+}
