@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 16 24">
+<style type="text/css">
+	.st0{fill:none;stroke:#99321F;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+</style>
+<symbol  id="New_Symbol_7" viewBox="-6.2 -12 16 24">
+	<g>
+		<polyline class="st0" points="-4.2,10 7.8,0 -4.2,-10 		"/>
+	</g>
+</symbol>
+<g>
+		<use xlink:href="#New_Symbol_7"  width="16" height="24" id="XMLID_16_" x="-6.2" y="-12" transform="matrix(1 0 0 -1 6.1667 12)"/>
+</g>
+</svg>

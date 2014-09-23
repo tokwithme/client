@@ -77,6 +77,38 @@ module.exports = function(grunt) {
 			}
 		},
 
+		svgstore: {
+			options: {
+				prefix : 'icon-'
+			},
+			build: {
+				files: {
+					'web/build/svg-defs.svg': ['web/svg/**/*.svg']
+				}
+			}
+		},
+
+		svgmin: {
+			options: {
+				plugins: [
+					{
+						removeViewBox: false
+					}, {
+						removeUselessStrokeAndFill: false
+					}, {
+						removeTitle: false
+					}, {
+						cleanupIDs: false
+					}
+				]
+			},
+			build: {
+				files: {
+					'web/build/svg-defs.svg': 'web/build/svg-defs.svg'
+				}
+			}
+		},
+
 		sshconfig: {
 			myhost: cfg.serverCfg.sshconfig
 		},
@@ -104,6 +136,8 @@ module.exports = function(grunt) {
 	//grunt.loadNpmTasks('grunt-contrib-cssmin');
 	//grunt.loadNpmTasks('grunt-contrib-jshint');
 	//grunt.loadNpmTasks('grunt-autoprefixer');
+	grunt.loadNpmTasks('grunt-svgstore');
+	grunt.loadNpmTasks('grunt-svgmin');
 	grunt.loadNpmTasks('grunt-contrib-less');
 	grunt.loadNpmTasks('grunt-contrib-watch');
 	grunt.loadNpmTasks('grunt-bower-concat');
@@ -115,6 +149,7 @@ module.exports = function(grunt) {
 	grunt.registerTask('build',	['bower_concat']);
 	//grunt.registerTask('build-css',	['less:build', 'less:bootstrap', 'autoprefixer:build', 'cssmin']);
 	//grunt.registerTask('build-js',	['uglify']);
+	grunt.registerTask('svg', ['svgstore', 'svgmin']);
 	grunt.registerTask('deploy', ['sshexec', 'open']);
 
 

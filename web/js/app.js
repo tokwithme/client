@@ -12,12 +12,10 @@ $(document).ready(function(){
 
 	var
 		//storage = app.storage,
-		//als = app.alsCreate(storage),
-		//retina = app.retinaCreate('/img/')
 		aspect = app.aspect
 	;
 
-	//retina.run();
+
 	aspect.run();
 
 	$(window).resize(app.common.throttle(aspect.run, 200));
