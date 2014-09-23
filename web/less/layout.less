@@ -1,0 +1,61 @@
+
+/* --- Layout.less -------------------------------------- */
+
+*,
+*:before,
+*:after {
+	box-sizing: border-box;
+}
+
+html, body {
+	height: 100%;
+}
+
+body {
+	font-family: 'PT Sans', sans-serif;
+	font-size: 16px;
+	color: @font-main;
+
+	background-color: @bg-red1; // fallback
+	background: linear-gradient(to bottom,
+		@bg-red1 0%,
+		@bg-red2 100%
+	);
+	cursor: default;
+	overflow: hidden;
+}
+
+.cont {
+}
+
+.cont1 {
+	height: 100%;
+	max-height: 600px;
+	//min-height: 320px;
+
+	margin: 0 auto;
+
+
+	background: url('@{img}/bgApp-white.png') 50% 50% no-repeat;
+	background-size: contain;
+	//background-color: #fff;
+
+	@media @big {
+		//max-width: @layoutBigW;
+		//max-height: @layoutBigH;
+	}
+}
+
+.cont2 {
+	height: 100%;
+	padding: 15%; // test it
+}
+
+.cont3 {
+	//margin: 20px 20px 0;
+	//margin: 0 auto;
+	height: 100%;
+	background-color: rgba(255,255,255,0.5);
+
+	text-align: center;
+}

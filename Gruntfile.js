@@ -30,6 +30,39 @@ module.exports = function(grunt) {
 		pkg: grunt.file.readJSON('package.json'),
 		cfg: cfg,
 
+		less: {
+			dev: {
+				files: {
+					'web/build/all.css': 'web/less/_all.less'
+				}
+			}
+		},
+
+		watch: {
+			options: {
+				livereload: true,
+				livereloadOnError: false,
+				interrupt: true,
+				spawn: false,
+				atBegin: true
+			},
+			less: {
+				files: 'web/less/**/*.less',
+				tasks: ['less:dev'/*, 'autoprefixer:dev'*/]
+			},
+			//svg: {
+			//	files: 'web/svg/**/*.svg',
+			//	tasks: ['svgstore', 'svgmin']
+			//},
+			html: {
+				files: [
+					'web/_/**/*.php',
+					'web/img/**/*'
+				],
+				tasks: []
+			}
+		},
+
 		bower_concat: {
 			all: {
 				mainFiles: {
@@ -37,6 +70,9 @@ module.exports = function(grunt) {
 					//'angular': 'angular.min.js',
 					'ngstorage': 'ngStorage.min.js'
 				},
+				exclude: [
+					'normalize.css'
+				],
 				dest: 'web/build/bower.js'
 			}
 		},
@@ -68,8 +104,8 @@ module.exports = function(grunt) {
 	//grunt.loadNpmTasks('grunt-contrib-cssmin');
 	//grunt.loadNpmTasks('grunt-contrib-jshint');
 	//grunt.loadNpmTasks('grunt-autoprefixer');
-	//grunt.loadNpmTasks('grunt-contrib-less');
-	//grunt.loadNpmTasks('grunt-contrib-watch');
+	grunt.loadNpmTasks('grunt-contrib-less');
+	grunt.loadNpmTasks('grunt-contrib-watch');
 	grunt.loadNpmTasks('grunt-bower-concat');
 	grunt.loadNpmTasks('grunt-ssh');
 	grunt.loadNpmTasks('grunt-open');

@@ -11,11 +11,14 @@
   "private": true,
   "ignore": [],
   "dependencies": {
-	"jquery": "1.x",
-	"javascript-state-machine": "2.x",
-	"tv4": "1.0.x",
+	"normalize.css": "3.x",
 
-	"angular": "1.2.x",
-	"ngstorage": "x"
+    "jquery": "1.x",
+    "javascript-state-machine": "2.x",
+    "tv4": "1.0.x",
+
+    "angular": "1.2.x",
+    "angular-ui-router": "x",
+    "ngstorage": "x"
   }
 }
